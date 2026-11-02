@@ -1,0 +1,529 @@
+<!doctype html>
+<html
+  lang="ko"
+  data-composition-variables='[{"id":"theme","type":"enum","label":"Theme","default":"light","options":[{"value":"light","label":"Light"},{"value":"dark","label":"Dark"}]}]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=720, height=1600" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Roboto"; src: url("assets/fonts/Roboto.ttf"); font-weight: 100 900; }
+      @font-face { font-family: "Noto Sans KR"; src: url("assets/fonts/NotoSansKR.ttf"); font-weight: 100 900; }
+      /* M3 토큰(ui-design 6.1). 다크 값은 같은 표의 다크 열 */
+      :root {
+        --surface: #fff8f5; --onSurface: #211a16; --onSurfaceVariant: #52443b;
+        --primary: #6f4a2e; --onPrimary: #ffffff; --primaryContainer: #ffdcc4;
+        --secondaryContainer: #f8decf; --onSecondaryContainer: #261911;
+        --tertiary: #2f6a5a; --tertiaryContainer: #b4efdc; --onTertiaryContainer: #002019;
+        --surfaceContainer: #f6ebe5; --surfaceContainerHigh: #f0e5df;
+        --outline: #847469; --outlineVariant: #d7c3b7;
+        --inverseSurface: #362f2b; --inverseOnSurface: #fceee8;
+        --disabledBg: rgba(33, 26, 22, 0.12); --disabledFg: rgba(33, 26, 22, 0.38);
+      }
+      :root[data-theme="dark"] {
+        --surface: #18120e; --onSurface: #eee0d9; --onSurfaceVariant: #d7c3b7;
+        --primary: #f0bc94; --onPrimary: #48290f; --primaryContainer: #613f23;
+        --secondaryContainer: #554338; --onSecondaryContainer: #f8decf;
+        --tertiary: #98d3c0; --tertiaryContainer: #135143; --onTertiaryContainer: #b4efdc;
+        --surfaceContainer: #251e1a; --surfaceContainerHigh: #302824;
+        --outline: #9f8d82; --outlineVariant: #52443b;
+        --inverseSurface: #eee0d9; --inverseOnSurface: #362f2b;
+        --disabledBg: rgba(238, 224, 217, 0.12); --disabledFg: rgba(238, 224, 217, 0.38);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 720px; height: 1600px; overflow: hidden; background: var(--surface); }
+      #root { position: relative; width: 100%; height: 100%; background: var(--surface); font-family: "Roboto", "Noto Sans KR", sans-serif; color: var(--onSurface); }
+      /* 1 dp = 2 px: the whole phone screen is laid out in dp and scaled once */
+      #app { position: absolute; left: 0; top: 0; width: 360px; height: 800px; transform: scale(2); transform-origin: 0 0; }
+      .layer { position: absolute; inset: 0; }
+      .abs { position: absolute; }
+      [hidden] { display: none !important; }
+      .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+      .m { font-weight: 500; }
+      .pill { position: absolute; border-radius: 9999px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 500; overflow: hidden; }
+      .pill svg { width: 24px; height: 24px; flex: none; }
+      .primary { background: var(--primary); color: var(--onPrimary); }
+      .outlined { border: 1px solid var(--outline); color: var(--primary); }
+      .tonal { background: var(--secondaryContainer); color: var(--onSecondaryContainer); }
+      .disabled { background: var(--disabledBg); color: var(--disabledFg); }
+      .topbar { left: 0; top: 24px; width: 360px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 400; }
+      .lbl { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--onSurfaceVariant); }
+      .val36 { font-size: 36px; line-height: 48px; font-weight: 500; }
+      .stack { display: inline-grid; }
+      .stack > * { grid-area: 1 / 1; text-align: right; }
+      .tab { position: absolute; top: 0; width: 120px; height: 80px; display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 4px; font-size: 12px; font-weight: 500; color: var(--onSurfaceVariant); }
+      .tab .ind { width: 64px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
+      .tab svg { width: 24px; height: 24px; }
+      .mark { left: 292px; width: 52px; height: 16px; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--onSurfaceVariant); white-space: nowrap; }
+      /* S6(시안 A 요약) */
+      .s-cell { position: absolute; top: 104px; width: 104px; height: 72px; border-radius: 28px; background: var(--surfaceContainerHigh); padding: 12px 16px; }
+      .s-cell .l { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--onSurfaceVariant); }
+      .s-cell .v { margin-top: 4px; font-size: 22px; line-height: 28px; font-weight: 500; white-space: nowrap; }
+    </style>
+  </head>
+  <body>
+    <!-- B + A 조합: ①·S6 = 시안 A "차오르는 서버", ②③④ = 시안 B "흐르는 리본". 3.0–3.4 s 서버 → 그래프 영역 형태 전환 -->
+    <div id="root" data-composition-id="main" data-start="0" data-duration="21" data-fps="60" data-width="720" data-height="1600">
+      <div id="app">
+        <!-- ===== S1 추출 ===== -->
+        <div id="s1" class="layer">
+          <div id="ff" class="abs num m" style="left: 140px; top: 2px; width: 80px; height: 20px; border-radius: 10px; background: var(--inverseSurface); color: var(--inverseOnSurface); font-size: 12px; line-height: 20px; text-align: center" hidden>5× 빨리 감기</div>
+          <div class="abs topbar">V60 기본 ▾</div>
+          <svg class="abs" style="left: 312px; top: 44px; width: 24px; height: 24px" viewBox="0 0 24 24"><path style="fill: var(--onSurfaceVariant)" d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z" /></svg>
+          <div class="abs m" style="left: 16px; top: 96px; width: 96px; height: 32px; border-radius: 12px; background: var(--tertiaryContainer); color: var(--onTertiaryContainer); font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 6px">
+            <svg style="width: 18px; height: 18px" viewBox="0 0 24 24"><path style="fill: var(--onTertiaryContainer)" d="M7 12l-2-2-2 2 2 2 2-2zm10.71-4.29L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88zM19 10l-2 2 2 2 2-2-2-2z" /></svg>연결됨
+          </div>
+          <div class="abs num" style="right: 16px; top: 100px; height: 24px; display: flex; align-items: center; gap: 2px; font-size: 14px; color: var(--onSurfaceVariant)">
+            <svg style="width: 20px; height: 20px" viewBox="0 0 24 24"><path style="fill: var(--onSurfaceVariant)" d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" /></svg>82%
+          </div>
+          <!-- 숫자 겹: ①~④ 내내 같은 요소 하나. 전환 중에도 위치·크기 고정(D2) -->
+          <div class="abs" style="left: 17px; top: 144px; height: 92px; display: flex; align-items: baseline">
+            <span id="weight" class="num m" style="display: inline-block; width: 306px; text-align: right; font-size: 84px; line-height: 92px">312.6</span>
+            <span style="margin-left: 8px; font-size: 22px; line-height: 92px; color: var(--onSurfaceVariant)">g</span>
+          </div>
+          <div class="abs" style="left: 16px; top: 268px; width: 156px">
+            <div class="lbl">시간</div>
+            <div id="timer" class="num val36">00:00.0</div>
+          </div>
+          <div class="abs" style="left: 188px; top: 268px; width: 156px">
+            <div class="lbl">유량 g/s</div>
+            <div class="stack num val36"><span style="visibility: hidden">888.8</span><span id="flow">0.0</span></div>
+          </div>
+          <!-- 모양 겹 B: 리본 그래프 -->
+          <svg id="graph" class="abs" style="left: 0; top: 0; width: 360px; height: 800px; overflow: visible" viewBox="0 0 360 800"><g id="axes1"></g><g id="dyn1"></g></svg>
+          <!-- 모양 겹 A: 서버(①)와 서버 → 그래프 영역 전환 -->
+          <canvas id="cvA" class="abs" width="720" height="1600" style="left: 0; top: 0; width: 360px; height: 800px" data-layout-ignore></canvas>
+          <div id="m60" class="abs mark num" style="top: 483.8px">60 g</div>
+          <div id="m250" class="abs mark num" style="top: 369.1px">250 g</div>
+          <!-- 대기 배너 -->
+          <div id="banner" class="abs" style="left: 16px; top: 576px; width: 328px; height: 48px; border-radius: 20px; background: var(--surfaceContainerHigh); display: flex; align-items: center; gap: 12px; padding: 0 16px; font-size: 14px; color: var(--onSurface)">
+            <svg style="width: 24px; height: 24px; flex: none" viewBox="0 0 24 24"><path style="fill: var(--onSurfaceVariant)" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" /></svg>물을 부으면 타이머가 시작됩니다
+          </div>
+          <!-- 단계 조약돌 카드 -->
+          <div id="card" class="abs" style="left: 16px; top: 540px; width: 328px; height: 136px; border-radius: 28px; background: var(--surfaceContainerHigh); padding: 16px; display: flex; flex-direction: column; gap: 4px">
+            <div id="c1" class="num m" style="font-size: 14px; line-height: 20px; color: var(--onSurfaceVariant)"></div>
+            <div id="c2" class="m" style="font-size: 16px; line-height: 24px; max-height: 48px; overflow: hidden; word-break: keep-all"></div>
+            <div id="c3" class="num m" style="font-size: 16px; line-height: 24px"></div>
+          </div>
+          <!-- 동작 줄: Idle·WaitingForPour (y 644) -->
+          <div id="rowIdle">
+            <div id="zeroBtn" class="pill tonal" style="left: 16px; top: 644px; width: 96px; height: 64px">
+              <div id="zeroRipple" class="abs" style="left: 48px; top: 32px; width: 0; height: 0; border-radius: 50%; background: var(--onSecondaryContainer); opacity: 0"></div>
+              <svg id="zeroSpin" class="abs" style="left: 10px; top: 22px; width: 20px; height: 20px" hidden viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.5" fill="none" style="stroke: var(--onSecondaryContainer)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="40 14" /></svg>
+              <span>영점</span>
+            </div>
+            <div class="pill primary" style="left: 124px; top: 644px; width: 112px; height: 64px">
+              <svg viewBox="0 0 24 24"><path style="fill: var(--onPrimary)" d="M8 5v14l11-7z" /></svg><span id="startLbl">시작</span>
+            </div>
+            <div id="cancelBtn" class="pill outlined" style="left: 248px; top: 644px; width: 96px; height: 64px">취소</div>
+          </div>
+          <!-- 동작 줄: Running (y 700) -->
+          <div id="rowRun">
+            <!-- 비활성 버튼(M3 38%/12%)은 WCAG 1.4.3 대비 예외라 감사에서 뺀다 -->
+            <div class="pill disabled" data-layout-ignore style="left: 16px; top: 700px; width: 96px; height: 64px">영점</div>
+            <div class="pill primary" style="left: 124px; top: 700px; width: 112px; height: 64px">
+              <svg viewBox="0 0 24 24"><path style="fill: var(--onPrimary)" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>일시정지
+            </div>
+            <div class="pill outlined" style="left: 248px; top: 700px; width: 96px; height: 64px">완료</div>
+          </div>
+          <!-- 하단 탭 -->
+          <div id="tabs" class="abs" style="left: 0; top: 720px; width: 360px; height: 80px; background: var(--surfaceContainer)">
+            <div class="tab" style="left: 0; color: var(--onSurface)">
+              <div class="ind" style="background: var(--secondaryContainer)"><svg viewBox="0 0 24 24"><path style="fill: var(--onSecondaryContainer)" d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.9 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z" /></svg></div>추출
+            </div>
+            <div class="tab" style="left: 120px">
+              <div class="ind"><svg viewBox="0 0 24 24"><path style="fill: var(--onSurfaceVariant)" d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" /></svg></div>레시피
+            </div>
+            <div class="tab" style="left: 240px">
+              <div class="ind"><svg viewBox="0 0 24 24"><path style="fill: var(--onSurfaceVariant)" d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" /></svg></div>기록
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== S6 추출 요약(시안 A) ===== -->
+        <div id="s6" class="layer" style="opacity: 0">
+          <div class="abs topbar">추출 요약</div>
+          <div class="s-cell" style="left: 16px"><div class="l">최종 무게</div><div class="v num">250.0 g</div></div>
+          <div class="s-cell" style="left: 128px"><div class="l">시간</div><div class="v num">1:35</div></div>
+          <div class="s-cell" style="left: 240px"><div class="l">비율</div><div class="v num">1:16.7</div></div>
+          <!-- 다 찬 서버 정지 그림(176 × 164 dp, x 92, y 230) -->
+          <svg class="abs" style="left: 92px; top: 230px; overflow: visible" width="176" height="164" viewBox="0 0 176 164">
+            <defs>
+              <clipPath id="s-vclip">
+                <path transform="scale(1.76 1.64)" d="M 11 0 L 89 0 C 95 18, 100 42, 100 61 C 100 83, 79 100, 50 100 C 21 100, 0 83, 0 61 C 0 42, 5 18, 11 0 Z" />
+              </clipPath>
+            </defs>
+            <g clip-path="url(#s-vclip)">
+              <rect x="-2" y="13.12" width="180" height="152" style="fill: var(--primaryContainer)" />
+              <line x1="-2" y1="13.12" x2="178" y2="13.12" style="stroke: var(--primary)" stroke-width="2.5" />
+            </g>
+            <path transform="scale(1.76 1.64)" d="M 89 0 C 95 18, 100 42, 100 61 C 100 83, 79 100, 50 100 C 21 100, 0 83, 0 61 C 0 42, 5 18, 11 0" fill="none" style="stroke: var(--outline)" stroke-width="1.17" stroke-linecap="round" />
+          </svg>
+          <svg class="abs" style="left: 276px; top: 350.8px" width="10" height="14" viewBox="0 0 100 140">
+            <path d="M 50 0 C 50 0, 92 58, 92 92 C 92 118, 73 140, 50 140 C 27 140, 8 118, 8 92 C 8 58, 50 0, 50 0 Z" style="fill: var(--tertiary)" />
+          </svg>
+          <svg class="abs" style="left: 276px; top: 236.1px" width="10" height="14" viewBox="0 0 100 140">
+            <path d="M 50 0 C 50 0, 92 58, 92 92 C 92 118, 73 140, 50 140 C 27 140, 8 118, 8 92 C 8 58, 50 0, 50 0 Z" style="fill: var(--tertiary)" />
+          </svg>
+          <div class="abs mark num" style="top: 349.8px">60 g</div>
+          <div class="abs mark num" style="top: 235.1px">250 g</div>
+          <div class="abs" style="left: 16px; top: 448px; width: 328px; height: 56px; border: 1px solid var(--outline); border-radius: 20px; display: flex; align-items: center; padding: 0 16px; font-size: 16px; line-height: 24px">
+            <span style="position: absolute; left: 12px; top: -9px; padding: 0 4px; background: var(--surface); font-size: 12px; line-height: 16px; color: var(--onSurfaceVariant)">원두량</span>
+            <span class="num" style="flex: 1">15.0</span><span style="color: var(--onSurfaceVariant)">g</span>
+          </div>
+          <div class="pill outlined" style="left: 16px; top: 712px; width: 160px; height: 56px; border: none">버리기</div>
+          <div class="pill primary" style="left: 184px; top: 712px; width: 160px; height: 56px">저장</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ---------- 테마: 변수 theme(light | dark). 렌더 때 --variables '{"theme":"dark"}' ----------
+      const THEME = ((window.__hyperframes && window.__hyperframes.getVariables && window.__hyperframes.getVariables()) || {}).theme === "dark" ? "dark" : "light";
+      document.documentElement.dataset.theme = THEME;
+      const C = THEME === "dark"
+        ? { surface: "#18120e", onSurfaceVariant: "#d7c3b7", primary: "#f0bc94", tertiary: "#98d3c0", outline: "#9f8d82", outlineVariant: "#52443b", card: "#302824", cardTint: "#554338" }
+        : { surface: "#fff8f5", onSurfaceVariant: "#52443b", primary: "#6f4a2e", tertiary: "#2f6a5a", outline: "#847469", outlineVariant: "#d7c3b7", card: "#f0e5df", cardTint: "#f8decf" };
+
+      // DATA-BEGIN (명세 6.4 그대로)
+      const TAU = 2 * Math.PI;
+      function w(t) {
+        if (t < 0) return 0;
+        if (t <= 10) { const x = t / 10; return 61 * (x - 0.5 * Math.sin(TAU * x) / TAU); }
+        if (t <= 40) return 61;
+        if (t <= 90) { const x = (t - 40) / 50;
+          return 61 + 189 * (x - 0.5 * Math.sin(TAU * x) / TAU - 0.3 * Math.sin(8 * TAU * x) / (8 * TAU)); }
+        return 250;
+      }
+      const raw = (k) => Math.round(w(k / 10) * 10);
+      const scaleFlow = (k) => Math.min(Math.max(raw(k) - raw(k - 10), 0), 999);
+      const shownFlow = (k) => { let s = 0; for (let j = k - 9; j <= k; j++) s += scaleFlow(j); return s / 100; };
+      function springStep(s, target, k, zeta, dt) {
+        const c = 2 * zeta * Math.sqrt(k), h = dt / 4;
+        for (let i = 0; i < 4; i++) { const a = -k * (s.x - target) - c * s.v; s.v += a * h; s.x += s.v * h; }
+      }
+      // DATA-END
+
+      const fmt1 = (x) => (x < 0 ? "−" : "") + Math.abs(x).toFixed(1);
+      const lerp = (a, b, u) => a + (b - a) * u;
+      const clamp01 = (u) => Math.max(0, Math.min(1, u));
+      function springAt(k, zeta, t) {
+        if (t <= 0) return 0;
+        const s = { x: 0, v: 0 }, n = Math.floor(t * 60);
+        for (let i = 0; i < n; i++) springStep(s, 1, k, zeta, 1 / 60);
+        springStep(s, 1, k, zeta, t - n / 60);
+        return s.x;
+      }
+      function bez(x1, y1, x2, y2) {
+        return (t) => {
+          if (t <= 0) return 0; if (t >= 1) return 1;
+          let lo = 0, hi = 1, u = 0.5;
+          for (let i = 0; i < 30; i++) { u = (lo + hi) / 2; const x = 3 * (1 - u) * (1 - u) * u * x1 + 3 * (1 - u) * u * u * x2 + u * u * u; if (x < t) lo = u; else hi = u; }
+          return 3 * (1 - u) * (1 - u) * u * y1 + 3 * (1 - u) * u * u * y2 + u * u * u;
+        };
+      }
+      const easeRipple = bez(0.05, 0.7, 0.1, 1), easeTint = bez(0.4, 0, 0.2, 1), easeFall = bez(0.3, 0, 1, 1);
+      const mixHex = (a, b, u) => "#" + [0, 2, 4].map((i) => Math.round(lerp(parseInt(a.substr(i + 1, 2), 16), parseInt(b.substr(i + 1, 2), 16), u)).toString(16).padStart(2, "0")).join("");
+
+      // ================= 시안 B: 리본 그래프 =================
+      const mapFor = (x0, x1, y0, y1) => ({ x0, x1, y0, y1, X: (t) => x0 + (t * (x1 - x0)) / 99, Y: (g) => y1 - (g * (y1 - y0)) / 275 });
+      const M1 = mapFor(48, 336, 372, 504);
+      const SIM = [];
+      {
+        const hx = { x: M1.X(0), v: 0 }, hy = { x: M1.Y(0), v: 0 }, fs = { x: 0, v: 0 };
+        let prevK = 0;
+        for (let i = 0; i <= 96 * 60; i++) {
+          const k = Math.floor(i / 6 + 1e-9);
+          const tx = M1.X(k / 10), ty = M1.Y(Math.max(0, raw(k) / 10));
+          if (Math.abs(raw(k) - raw(prevK)) > 500) { hx.x = tx; hy.x = ty; hx.v = hy.v = 0; }
+          prevK = k;
+          SIM.push({ hx: hx.x, hy: hy.x, vx: hx.v, vy: hy.v, f: fs.x });
+          springStep(hx, tx, 1500, 1, 1 / 60);
+          springStep(hy, ty, 1500, 1, 1 / 60);
+          springStep(fs, shownFlow(k), 200, 1, 1 / 60);
+        }
+      }
+      const simAt = (tau) => SIM[Math.max(0, Math.min(SIM.length - 1, Math.round(tau * 60)))];
+      const ribbonW = (f) => Math.min(10, 2.5 + 0.9 * f);
+      const SAMPLE_W = []; for (let j = 0; j <= 960; j++) SAMPLE_W.push(ribbonW(SIM[j * 6].f));
+      function tauAt(v) {
+        if (v < 3) return null;
+        if (v < 14) return v - 3;
+        if (v < 18) return 86 + (v - 14);
+        if (v < 19) return 90 + 5 * (v - 18);
+        return 95;
+      }
+      function dropPath(D, s) {
+        const a = lerp(0, 23.2, s), b = lerp(0.37 * D, 23.2, s), Dm = lerp(D, 42, s);
+        const by1 = lerp(118, 115.2, s), bx = lerp(73, 73.2, s), by2 = lerp(140, 134, s), ty = 92 - Dm;
+        return `M50 ${ty}C${50 + a} ${ty} 92 ${92 - b} 92 92C92 ${by1} ${bx} ${by2} 50 ${by2}C${100 - bx} ${by2} 8 ${by1} 8 92C8 ${92 - b} ${50 - a} ${ty} 50 ${ty}Z`;
+      }
+      const DROP = dropPath(92, 0);
+      function ribbonSvg(pts) {
+        if (pts.length === 0) return "";
+        if (pts.length === 1) return `<circle cx="${pts[0][0]}" cy="${pts[0][1]}" r="${pts[0][2] / 2}" fill="${C.primary}"/>`;
+        const up = [], lo = [];
+        for (let i = 0; i < pts.length; i++) {
+          const p = pts[Math.max(0, i - 1)], n = pts[Math.min(pts.length - 1, i + 1)];
+          let dx = n[0] - p[0], dy = n[1] - p[1]; const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+          const h = pts[i][2] / 2;
+          up.push(`${(pts[i][0] - dy * h).toFixed(2)} ${(pts[i][1] + dx * h).toFixed(2)}`);
+          lo.push(`${(pts[i][0] + dy * h).toFixed(2)} ${(pts[i][1] - dx * h).toFixed(2)}`);
+        }
+        const a = pts[0], z = pts[pts.length - 1];
+        return `<path d="M${up.join("L")}L${lo.reverse().join("L")}Z" fill="${C.primary}"/>` +
+          `<circle cx="${a[0]}" cy="${a[1]}" r="${a[2] / 2}" fill="${C.primary}"/><circle cx="${z[0]}" cy="${z[1]}" r="${z[2] / 2}" fill="${C.primary}"/>`;
+      }
+      // shortcut: 표본(0.1 s = 0.29 dp 간격)을 직선으로 잇는다. 단조 3차 보간은 이 밀도에서 1 px 미만 차이라 생략, 축을 확대하면 Fritsch–Carlson으로 바꾼다.
+      function samplePts(M, kEnd, tauEnd) {
+        const pts = [];
+        for (let j = 0; j <= kEnd && j / 10 < tauEnd; j++) pts.push([M.X(j / 10), M.Y(raw(j) / 10), SAMPLE_W[j]]);
+        return pts;
+      }
+      function marker(x, y, filled, sc) {
+        const t = `translate(${x} ${y}) scale(${0.1 * sc}) translate(-50 -70)`;
+        return filled
+          ? `<path d="${DROP}" transform="${t}" fill="${C.tertiary}"/>`
+          : `<path d="${DROP}" transform="${t}" fill="${C.surface}" stroke="${C.onSurfaceVariant}" stroke-width="15"/>`;
+      }
+      function head(x, y, angDeg, scale, D, s) {
+        return `<path d="${dropPath(D, s)}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${angDeg.toFixed(1)}) scale(${scale}) translate(-50 -92)" fill="${C.primary}"/>`;
+      }
+      function axesSvg(M, legendY, lx = 0) {
+        let s = "";
+        for (const g of [0, 100, 200]) s += `<line x1="${M.x0}" x2="${M.x1}" y1="${M.Y(g)}" y2="${M.Y(g)}" stroke="${C.outlineVariant}" stroke-width="1"/>`;
+        for (const t of [0, 30, 60, 90]) s += `<line x1="${M.X(t)}" x2="${M.X(t)}" y1="${M.y0}" y2="${M.y1}" stroke="${C.outlineVariant}" stroke-width="1"/>`;
+        const txt = (x, y, anchor, str) => `<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="central" font-size="12" font-weight="500" fill="${C.onSurfaceVariant}" style="font-variant-numeric:tabular-nums;font-feature-settings:'tnum'">${str}</text>`;
+        for (const g of [0, 100, 200]) s += txt(44, M.Y(g), "end", g);
+        s += txt(44, M.y0 + 4, "end", "g");
+        for (const t of [0, 30, 60, 90]) s += txt(M.X(t), M.y1 + 12, "middle", t);
+        s += txt(M.x1, M.y1 + 12, "end", "s");
+        const ly = legendY + 8;
+        s += `<path d="M${206 + lx} ${ly - 1.25}C${216 + lx} ${ly - 1.25} ${222 + lx} ${ly - 4} ${230 + lx} ${ly - 4}L${230 + lx} ${ly + 4}C${222 + lx} ${ly + 4} ${216 + lx} ${ly + 1.25} ${206 + lx} ${ly + 1.25}Z" fill="${C.primary}"/>`;
+        s += txt(234 + lx, ly, "start", "실제");
+        s += `<line x1="${270 + lx}" x2="${296 + lx}" y1="${ly}" y2="${ly}" stroke="${C.outline}" stroke-width="2" stroke-dasharray="8 6"/>`;
+        s += txt(300 + lx, ly, "start", "목표");
+        return s;
+      }
+      // 목표선 (0,0)→(10,60)→(90,250). 양옆 1 dp surface 테두리, 리본보다 위 겹
+      function targetSvg(M, w2) {
+        const seg = (t0, g0, t1, g1, sw) =>
+          `<line x1="${M.X(t0)}" y1="${M.Y(g0)}" x2="${M.X(t1)}" y2="${M.Y(g1)}" stroke="${C.surface}" stroke-width="${sw + 2}"/>` +
+          `<line x1="${M.X(t0)}" y1="${M.Y(g0)}" x2="${M.X(t1)}" y2="${M.Y(g1)}" stroke="${C.outline}" stroke-width="${sw}" stroke-dasharray="8 6"/>`;
+        return seg(0, 0, 10, 60, 2) + seg(10, 60, 90, 250, w2);
+      }
+
+      // ================= 시안 A: 서버(①) =================
+      const VX = (u) => 92 + 1.76 * u, VY = (v) => 364 + 1.64 * v;
+      const markY = (g) => 528 - 150.88 * (g / 250);
+      const VESSEL = new Path2D();
+      VESSEL.moveTo(VX(11), VY(0)); VESSEL.lineTo(VX(89), VY(0));
+      VESSEL.bezierCurveTo(VX(95), VY(18), VX(100), VY(42), VX(100), VY(61));
+      VESSEL.bezierCurveTo(VX(100), VY(83), VX(79), VY(100), VX(50), VY(100));
+      VESSEL.bezierCurveTo(VX(21), VY(100), VX(0), VY(83), VX(0), VY(61));
+      VESSEL.bezierCurveTo(VX(0), VY(42), VX(5), VY(18), VX(11), VY(0));
+      VESSEL.closePath();
+      // 위가 열린 벽을 호 길이로 고르게 N점 표본 → 그래프 영역의 위가 열린 사각(오른쪽 위 → 아래 → 왼쪽 위)과 점끼리 짝지어 형태 전환
+      const NP = 240;
+      function resample(dense) {
+        const L = [0];
+        for (let i = 1; i < dense.length; i++) L.push(L[i - 1] + Math.hypot(dense[i][0] - dense[i - 1][0], dense[i][1] - dense[i - 1][1]));
+        const out = [], tot = L[L.length - 1];
+        for (let n = 0, j = 1; n < NP; n++) {
+          const s = (tot * n) / (NP - 1);
+          while (j < L.length - 1 && L[j] < s) j++;
+          const u = (s - L[j - 1]) / (L[j] - L[j - 1] || 1);
+          out.push([lerp(dense[j - 1][0], dense[j][0], u), lerp(dense[j - 1][1], dense[j][1], u)]);
+        }
+        return out;
+      }
+      const cub = (p0, p1, p2, p3, t) => (1 - t) ** 3 * p0 + 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t * t * p2 + t ** 3 * p3;
+      const WALL_DENSE = [];
+      for (const [a, b, c, d] of [[[89, 0], [95, 18], [100, 42], [100, 61]], [[100, 61], [100, 83], [79, 100], [50, 100]], [[50, 100], [21, 100], [0, 83], [0, 61]], [[0, 61], [0, 42], [5, 18], [11, 0]]])
+        for (let i = 0; i <= 200; i++) { const t = i / 200; WALL_DENSE.push([VX(cub(a[0], b[0], c[0], d[0], t)), VY(cub(a[1], b[1], c[1], d[1], t))]); }
+      const WALL_PTS = resample(WALL_DENSE);
+      const RECT_PTS = resample([[M1.x1, M1.y0], [M1.x1, M1.y1], [M1.x0, M1.y1], [M1.x0, M1.y0]].flatMap((p, i, arr) => {
+        if (i === 0) return [p];
+        const q = arr[i - 1], o = [];
+        for (let s = 1; s <= 100; s++) o.push([lerp(q[0], p[0], s / 100), lerp(q[1], p[1], s / 100)]);
+        return o;
+      }));
+      // 60 g 목표 수위선이 벽과 만나는 x(①은 그 사이만 그림)
+      const Y60 = markY(60);
+      function wallX(side) {
+        const half = side > 0 ? WALL_DENSE.slice(0, 402) : WALL_DENSE.slice(402);
+        for (let i = 1; i < half.length; i++) {
+          const [x0, y0] = half[i - 1], [x1, y1] = half[i];
+          if ((y0 - Y60) * (y1 - Y60) <= 0 && y0 !== y1) return lerp(x0, x1, (Y60 - y0) / (y1 - y0));
+        }
+        return side > 0 ? 268 : 92;
+      }
+      const XL = wallX(-1), XR = wallX(1);
+      console.assert(XL > 92 && XL < 130 && XR > 230 && XR < 268, "waterline-wall intersection", XL, XR);
+      // 목표선 꼭짓점: A 수위선(가운데 점은 B 꼭짓점과 같은 비율) → B 목표선
+      const TGT_A = [[XL, Y60], [lerp(XL, XR, (M1.X(10) - M1.X(0)) / (M1.X(90) - M1.X(0))), Y60], [XR, Y60]];
+      const TGT_B = [[M1.X(0), M1.Y(0)], [M1.X(10), M1.Y(60)], [M1.X(90), M1.Y(250)]];
+      const MK_A = [[281, markY(60)], [281, markY(250)]];
+      const MK_B = [[M1.X(10), M1.Y(60)], [M1.X(90), M1.Y(250)]];
+
+      // 전환 진행도: 임계 감쇠(ζ 1, k 225, ω 15) 단위 계단 응답, 400 ms 끝에서 1이 되게 정규화(2% 정착 389 ms, 오버슈트 0)
+      const MORPH0 = 3.0, MORPH_T = 0.4, OMEGA = 15;
+      const stepResp = (t) => 1 - (1 + OMEGA * t) * Math.exp(-OMEGA * t);
+      const morphP = (v) => (v < MORPH0 ? 0 : v >= MORPH0 + MORPH_T ? 1 : stepResp(v - MORPH0) / stepResp(MORPH_T));
+      console.assert(morphP(3.2) > 0.5 && morphP(3.2) < 1 && morphP(3.399) <= 1 && morphP(3.4) === 1, "morph spring");
+
+      const cv = document.getElementById("cvA"), ctx = cv.getContext("2d");
+      function dropC(cx, cy, s) {
+        const k = 0.1 * s, X = (u) => cx + (u - 50) * k, Y = (v) => cy + (v - 70) * k;
+        ctx.beginPath();
+        ctx.moveTo(X(50), Y(0));
+        ctx.bezierCurveTo(X(50), Y(0), X(92), Y(58), X(92), Y(92));
+        ctx.bezierCurveTo(X(92), Y(118), X(73), Y(140), X(50), Y(140));
+        ctx.bezierCurveTo(X(27), Y(140), X(8), Y(118), X(8), Y(92));
+        ctx.bezierCurveTo(X(8), Y(58), X(50), Y(0), X(50), Y(0));
+        ctx.closePath();
+      }
+      function hollowMarker(x, y) {
+        dropC(x, y, 1);
+        ctx.fillStyle = C.surface; ctx.fill();
+        ctx.lineWidth = 1.5; ctx.strokeStyle = C.onSurfaceVariant; ctx.setLineDash([]); ctx.stroke();
+      }
+      // 서버 그림(①, v < 3) 또는 서버 → 그래프 영역 형태 전환(3.0–3.4 s, p 0 → 1)
+      function drawA(v, p) {
+        ctx.setTransform(2, 0, 0, 2, 0, 0);
+        ctx.clearRect(0, 0, 360, 800);
+        if (v >= MORPH0 + MORPH_T) return;
+        ctx.lineCap = "round"; ctx.lineJoin = "round";
+        // 벽 → 위가 열린 사각. 형태가 거의 다 바뀐 뒤(p 0.7~1) 격자에 자리를 넘김
+        ctx.globalAlpha = p < 0.7 ? 1 : 1 - (p - 0.7) / 0.3;
+        ctx.beginPath();
+        for (let i = 0; i < NP; i++) {
+          const x = lerp(WALL_PTS[i][0], RECT_PTS[i][0], p), y = lerp(WALL_PTS[i][1], RECT_PTS[i][1], p);
+          i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        }
+        ctx.lineWidth = lerp(2, 1, p);
+        ctx.strokeStyle = mixHex(C.outline, C.outlineVariant, p);
+        ctx.setLineDash([]);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        // 현재 단계 목표 수위선(onSurfaceVariant 1.5 dp, 6/4) → B 목표선(outline 2 dp, 8/6). 구간마다 대시를 새로 시작(SVG와 같게)
+        ctx.strokeStyle = mixHex(C.onSurfaceVariant, C.outline, p);
+        ctx.lineWidth = lerp(1.5, 2, p);
+        ctx.lineCap = "butt";
+        ctx.setLineDash([lerp(6, 8, p), lerp(4, 6, p)]);
+        for (let s = 0; s < 2; s++) {
+          ctx.beginPath();
+          ctx.moveTo(lerp(TGT_A[s][0], TGT_B[s][0], p), lerp(TGT_A[s][1], TGT_B[s][1], p));
+          ctx.lineTo(lerp(TGT_A[s + 1][0], TGT_B[s + 1][0], p), lerp(TGT_A[s + 1][1], TGT_B[s + 1][1], p));
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+        ctx.lineCap = "round";
+        // 영점 확인 물방울(1.16 s 낙하 → 1.48 s 바닥 물결 고리, motion.fall / motion.ripple)
+        if (v >= 1.16 && v < 1.48) {
+          dropC(180, 364 + (517 - 364) * easeFall((v - 1.16) / 0.32), 1);
+          ctx.fillStyle = C.primary; ctx.fill();
+        }
+        const a = v - 1.48;
+        if (a >= 0 && a < 0.9) {
+          const q = a / 0.9, rx = Math.max(0.01, 40 * easeRipple(q));
+          ctx.save(); ctx.clip(VESSEL);
+          ctx.globalAlpha = 0.6 * (1 - q);
+          ctx.lineWidth = 2; ctx.strokeStyle = C.primary;
+          ctx.beginPath(); ctx.ellipse(180, 524, rx, rx * 0.25, 0, 0, TAU); ctx.stroke();
+          ctx.restore();
+          ctx.globalAlpha = 1;
+        }
+        // 단계 물방울 표식(속 빈) → B 꼭짓점 표식 자리로 이동
+        for (let i = 0; i < 2; i++) hollowMarker(lerp(MK_A[i][0], MK_B[i][0], p), lerp(MK_A[i][1], MK_B[i][1], p));
+      }
+
+      document.getElementById("axes1").innerHTML = axesSvg(M1, 364, -30);
+      const $ = (id) => document.getElementById(id);
+      const show = (id, on) => { $(id).toggleAttribute("hidden", !on); };
+      const STEP = [
+        { l1: "1/2 단계 · 60 g까지 · 0:10까지", l2: "뜸 60 g, 30초 기다리기 (95°C, 중간-가는 분쇄)", goal: 60 },
+        { l1: "2/2 단계 · 250 g까지 · 1:30까지", l2: "0:40 나머지 물을 작은 원으로 천천히 250 g까지", goal: 250 },
+      ];
+      const V_STEP2 = 3 + 9.7, V_GOAL = 18.0, V_DONE = 19.0;
+
+      function renderAt(v) {
+        const tau = tauAt(v);
+        const running = tau !== null;
+        const k = running ? Math.floor(tau * 10 + 1e-6) : 0;
+        // --- 숫자 겹: 표본 그대로, 보간 없음 ---
+        const grams = running ? raw(k) / 10 : v < 1.16 ? 312.6 : 0;
+        $("weight").textContent = fmt1(grams);
+        const mm = Math.floor(k / 600), ss = (k % 600) / 10;
+        $("timer").textContent = `${String(mm).padStart(2, "0")}:${ss.toFixed(1).padStart(4, "0")}`;
+        $("flow").textContent = running ? shownFlow(k).toFixed(1) : "0.0";
+        // --- 상태별 배치(즉시 바뀜) ---
+        const waiting = v >= 1.3 && !running;
+        show("tabs", !running); show("rowIdle", !running); show("rowRun", running);
+        show("banner", waiting); show("cancelBtn", waiting); show("card", running);
+        $("startLbl").textContent = waiting ? "지금 시작" : "시작";
+        show("ff", v >= 18 && v < 19);
+        // 영점 탭: M3 리플 + 20 dp 진행 원(1.00–1.16)
+        const rp = v - 1.0, rr = 60 * easeTint(clamp01(rp / 0.25));
+        const ro = rp < 0 ? 0 : v < 1.16 ? 0.12 : 0.12 * (1 - clamp01((v - 1.16) / 0.15));
+        Object.assign($("zeroRipple").style, { width: `${2 * rr}px`, height: `${2 * rr}px`, marginLeft: `${-rr}px`, marginTop: `${-rr}px`, opacity: ro });
+        show("zeroSpin", v >= 1.0 && v < 1.16);
+        $("zeroSpin").style.transform = `rotate(${(v - 1.0) * 360 * 1.4}deg)`;
+        // 카드
+        const stepIdx = running && raw(k) >= 600 ? 1 : 0;
+        if (running) {
+          const st = STEP[stepIdx];
+          $("c1").textContent = st.l1; $("c2").textContent = st.l2;
+          $("c3").textContent = raw(k) >= 2500 ? "목표 도달 · 무게가 멈추면 끝납니다" : `남은 ${fmt1(Math.max(0, st.goal - raw(k) / 10))} g · 제때`;
+          const d = v - V_STEP2; // motion.tint: 들어감 250 ms, 나옴 350 ms
+          const tint = d < 0 ? 0 : d < 0.25 ? easeTint(d / 0.25) : 1 - easeTint(clamp01((d - 0.25) / 0.35));
+          $("card").style.background = mixHex(C.card, C.cardTint, tint);
+        }
+        // --- 모양 겹 A(①·전환) ---
+        const p = morphP(v), morphing = v >= MORPH0 && v < MORPH0 + MORPH_T;
+        drawA(v, p);
+        $("m60").style.opacity = $("m250").style.opacity = String(clamp01(1 - 2 * p));
+        // 격자·축·리본은 형태가 반 넘게 바뀐 뒤 나타남
+        const g = v < MORPH0 ? 0 : clamp01((p - 0.5) / 0.5);
+        $("axes1").setAttribute("opacity", g);
+        // --- 모양 겹 B: 리본 그래프(3.0 s부터) ---
+        if (!running) { $("dyn1").innerHTML = ""; }
+        else {
+          const step2 = v >= V_STEP2;
+          const w2 = step2 ? lerp(2, 3, springAt(200, 1, v - V_STEP2)) : 2; // motion.calm
+          const d60 = step2 ? marker(M1.X(10), M1.Y(60), true, lerp(0.6, 1, springAt(400, 0.6, v - V_STEP2))) : marker(M1.X(10), M1.Y(60), false, 1);
+          const goal = v >= V_GOAL;
+          const d250 = goal ? marker(M1.X(90), M1.Y(250), true, lerp(0.6, 1, springAt(400, 0.6, v - V_GOAL))) : marker(M1.X(90), M1.Y(250), false, 1);
+          const S = simAt(tau);
+          const headTau = ((S.hx - M1.x0) * 99) / (M1.x1 - M1.x0);
+          const pts = samplePts(M1, k, headTau);
+          pts.push([S.hx, S.hy, ribbonW(S.f)]);
+          const body = ribbonSvg(pts);
+          const ang = (Math.atan2(S.vy, S.vx) * 180) / Math.PI - 90;
+          const D = 42 + (6 + 1.2 * S.f) / 0.14;
+          const settle = springAt(300, 0.8, v - V_DONE); // motion.settle
+          const hd = head(S.hx, S.hy, ang, lerp(0.14, 12 / 84, settle), D, settle);
+          let ring = "";
+          const rt = v - (V_DONE + 0.25);
+          if (rt >= 0 && rt < 0.9) {
+            const e = easeRipple(rt / 0.9);
+            ring = `<circle cx="${S.hx}" cy="${S.hy}" r="${28 * e}" fill="none" stroke="${C.primary}" stroke-width="2" opacity="${0.6 * (1 - e)}"/>`;
+          }
+          // 전환 중에는 목표선·표식을 캔버스가 그리므로 리본·머리만
+          $("dyn1").innerHTML = morphing ? `<g opacity="${g}">${body}${hd}</g>` : body + targetSvg(M1, w2) + d60 + d250 + hd + ring;
+        }
+        // --- 화면 전환: fadeOut 150 ms → S6 fadeIn 200 ms ---
+        $("s1").style.opacity = v < 19.9 ? 1 : Math.max(0, 1 - (v - 19.9) / 0.15);
+        $("s6").style.opacity = v < 20.05 ? 0 : Math.min(1, (v - 20.05) / 0.2);
+      }
+
+      window.addEventListener("hf-seek", (e) => renderAt(e.detail.time));
+      const clock = { t: 0 };
+      const tl = gsap.timeline({ paused: true });
+      tl.to(clock, { t: 21, duration: 21, ease: "none", onUpdate: () => renderAt(clock.t) }, 0);
+      renderAt(0);
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,257 @@
+{
+  "version": 1,
+  "historyId": "4448cea2-4011-4abb-8b04-faf558825336",
+  "currentRevision": null,
+  "pendingChanges": false,
+  "files": {
+    "AGENTS.md": {
+      "hash": "1b36171117cb7c18f4100a0db6a3782ff2e096115995733200445cc2e80a4060",
+      "content": "/Users/bbqman/.cache/hyperframes/history/4448cea2-4011-4abb-8b04-faf558825336/blobs/1b/1b36171117cb7c18f4100a0db6a3782ff2e096115995733200445cc2e80a4060"
+    },
+    "CLAUDE.md": {
+      "hash": "1b36171117cb7c18f4100a0db6a3782ff2e096115995733200445cc2e80a4060",
+      "content": "/Users/bbqman/.cache/hyperframes/history/4448cea2-4011-4abb-8b04-faf558825336/blobs/1b/1b36171117cb7c18f4100a0db6a3782ff2e096115995733200445cc2e80a4060"
+    },
+    "assets/fonts/Roboto.ttf": {
+      "hash": "d7598e12c5dbef095ff8272cfc55da0250bd07fbdecbac8a530b9b277872a134",
+      "content": "/Users/bbqman/.cache/hyperframes/history/4448cea2-4011-4abb-8b04-faf558825336/blobs/d7/d7598e12c5dbef095ff8272cfc55da0250bd07fbdecbac8a530b9b277872a134"
+    },
+    "hyperframes.json": {
+      "hash": "53dbce1e19aa713cbb12ee0bc4d206143b45ab15e6ffbfcaa8f69572d4d24d50",
+      "content": "/Users/bbqman/.cache/hyperframes/history/4448cea2-4011-4abb-8b04-faf558825336/blobs/53/53dbce1e19aa713cbb12ee0bc4d206143b45ab15e6ffbfcaa8f69572d4d24d50"
+    },
+    "index.html": {
+      "hash": "0413f5e979595bbc1f38f7d4dec3bf99434736f878db95d24a4fe5ed1300d28e",
+      "content": "/Users/bbqman/.cache/hyperframes/history/4448cea2-4011-4abb-8b04-faf558825336/blobs/04/0413f5e979595bbc1f38f7d4dec3bf99434736f878db95d24a4fe5ed1300d28e"
+    },
+    "meta.json": {
+      "hash": "181a74e1be18125904f81609b9c19178cf14c041f4f24ed2c77032456643d71a",
+      "content": "/Users/bbqman/.cache/hyperframes/history/4448cea2-4011-4abb-8b04-faf558825336/blobs/18/181a74e1be18125904f81609b9c19178cf14c041f4f24ed2c77032456643d71a"
+    },
+    "package.json": {
+      "hash": "4bbe29c5d73e95aa7f55630fe07897f3df3af57be1b122a19516151b698feb6e",
+      "content": "/Users/bbqman/.cache/hyperframes/history/4448cea2-4011-4abb-8b04-faf558825336/blobs/4b/4bbe29c5d73e95aa7f55630fe07897f3df3af57be1b122a19516151b698feb6e"
+    },
+    "assets/fonts/NotoSansKR.ttf": {
+      "hash": "194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252",
+      "content": "/Users/bbqman/.cache/hyperframes/history/4448cea2-4011-4abb-8b04-faf558825336/blobs/19/194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252"
+    }
+  },
+  "revisions": {},
+  "checks": {
+    "latest": {
+      "revision": null,
+      "id": "0886bb55-0f7b-41c3-9d45-41f030788ec9"
+    },
+    "revisions": {},
+    "unversioned": [
+      {
+        "id": "0886bb55-0f7b-41c3-9d45-41f030788ec9",
+        "scope": "project",
+        "report": "/Users/bbqman/HermesAgents/ETC/TimemoreDotScaleApp/_workspace/motion/AB-combo/.hyperframes/artifacts/checks/0886bb55-0f7b-41c3-9d45-41f030788ec9.json",
+        "metadata": {
+          "ok": true,
+          "browserSkipped": false,
+          "options": {
+            "samples": 9,
+            "atTransitions": false,
+            "maxIssues": 80,
+            "collapseStatic": true,
+            "tolerance": 2,
+            "timeout": 10000,
+            "contrast": true,
+            "strict": false,
+            "snapshots": false,
+            "browserGpuMode": "auto"
+          }
+        },
+        "createdAt": 1793260045538,
+        "contentHash": "ae7e61175d27646dc65a52351c011e7aec4ca54d22e9b4faae308c25a18cd6a7",
+        "revision": null,
+        "inputFingerprint": "fe15d5eafd99e420e92515cf164aafbf8eafe40e6b90711c030b459ed4ba57b9",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      }
+    ]
+  },
+  "snapshots": {
+    "latest": {
+      "revision": null,
+      "id": "b0cbb59c-9149-4dec-a420-38fa9af257b1-7"
+    },
+    "revisions": {},
+    "unversioned": [
+      {
+        "scope": "full",
+        "id": "b0cbb59c-9149-4dec-a420-38fa9af257b1-0",
+        "image": "/Users/bbqman/HermesAgents/ETC/TimemoreDotScaleApp/_workspace/motion/AB-combo/.hyperframes/artifacts/snapshots/ce8a46c0-7f9e-4323-bb3e-2df051b0b067/frame-00-at-1.5s.png",
+        "time": 1.5,
+        "metadata": {
+          "width": 720,
+          "height": 1600,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793260084752,
+        "contentHash": "bd55bc831b72bd2be3f1f70bada8e416fac49fb8465adc69eb002c79dcd830d9",
+        "revision": null,
+        "inputFingerprint": "fe15d5eafd99e420e92515cf164aafbf8eafe40e6b90711c030b459ed4ba57b9",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "b0cbb59c-9149-4dec-a420-38fa9af257b1-1",
+        "image": "/Users/bbqman/HermesAgents/ETC/TimemoreDotScaleApp/_workspace/motion/AB-combo/.hyperframes/artifacts/snapshots/ce8a46c0-7f9e-4323-bb3e-2df051b0b067/frame-01-at-3.1s.png",
+        "time": 3.1,
+        "metadata": {
+          "width": 720,
+          "height": 1600,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793260084752,
+        "contentHash": "44115b646c3188c9cd49184c27dcd5affef6424e386a214e6ea74b64b5601342",
+        "revision": null,
+        "inputFingerprint": "fe15d5eafd99e420e92515cf164aafbf8eafe40e6b90711c030b459ed4ba57b9",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "b0cbb59c-9149-4dec-a420-38fa9af257b1-2",
+        "image": "/Users/bbqman/HermesAgents/ETC/TimemoreDotScaleApp/_workspace/motion/AB-combo/.hyperframes/artifacts/snapshots/ce8a46c0-7f9e-4323-bb3e-2df051b0b067/frame-02-at-3.2s.png",
+        "time": 3.2,
+        "metadata": {
+          "width": 720,
+          "height": 1600,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793260084752,
+        "contentHash": "23dc71357ca0584d4aa5e94fe0489b11c426141bbb6d23370533adc39930489d",
+        "revision": null,
+        "inputFingerprint": "fe15d5eafd99e420e92515cf164aafbf8eafe40e6b90711c030b459ed4ba57b9",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "b0cbb59c-9149-4dec-a420-38fa9af257b1-3",
+        "image": "/Users/bbqman/HermesAgents/ETC/TimemoreDotScaleApp/_workspace/motion/AB-combo/.hyperframes/artifacts/snapshots/ce8a46c0-7f9e-4323-bb3e-2df051b0b067/frame-03-at-3.3s.png",
+        "time": 3.3,
+        "metadata": {
+          "width": 720,
+          "height": 1600,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793260084752,
+        "contentHash": "127dd9b696d7e13923b91c5e1c1402e718d20161e6c093a9b70c89e65f5f76a4",
+        "revision": null,
+        "inputFingerprint": "fe15d5eafd99e420e92515cf164aafbf8eafe40e6b90711c030b459ed4ba57b9",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "b0cbb59c-9149-4dec-a420-38fa9af257b1-4",
+        "image": "/Users/bbqman/HermesAgents/ETC/TimemoreDotScaleApp/_workspace/motion/AB-combo/.hyperframes/artifacts/snapshots/ce8a46c0-7f9e-4323-bb3e-2df051b0b067/frame-04-at-6.5s.png",
+        "time": 6.5,
+        "metadata": {
+          "width": 720,
+          "height": 1600,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793260084752,
+        "contentHash": "33b509facfaa9e1f425a095decf77832a8dcabaaf6d8d4d4ae7497c090ea7905",
+        "revision": null,
+        "inputFingerprint": "fe15d5eafd99e420e92515cf164aafbf8eafe40e6b90711c030b459ed4ba57b9",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "b0cbb59c-9149-4dec-a420-38fa9af257b1-5",
+        "image": "/Users/bbqman/HermesAgents/ETC/TimemoreDotScaleApp/_workspace/motion/AB-combo/.hyperframes/artifacts/snapshots/ce8a46c0-7f9e-4323-bb3e-2df051b0b067/frame-05-at-12s.png",
+        "time": 12,
+        "metadata": {
+          "width": 720,
+          "height": 1600,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793260084752,
+        "contentHash": "be23b3c0af58f6f6b28fb4a4956d1233a45b5e8bae067083f4d6b81541cbd968",
+        "revision": null,
+        "inputFingerprint": "fe15d5eafd99e420e92515cf164aafbf8eafe40e6b90711c030b459ed4ba57b9",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "b0cbb59c-9149-4dec-a420-38fa9af257b1-6",
+        "image": "/Users/bbqman/HermesAgents/ETC/TimemoreDotScaleApp/_workspace/motion/AB-combo/.hyperframes/artifacts/snapshots/ce8a46c0-7f9e-4323-bb3e-2df051b0b067/frame-06-at-17.5s.png",
+        "time": 17.5,
+        "metadata": {
+          "width": 720,
+          "height": 1600,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793260084752,
+        "contentHash": "f7a47f1ed66b9ad9b2da4648ddbc93d451d0540df3eb3a0cfb8db3405614d31f",
+        "revision": null,
+        "inputFingerprint": "fe15d5eafd99e420e92515cf164aafbf8eafe40e6b90711c030b459ed4ba57b9",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      },
+      {
+        "scope": "full",
+        "id": "b0cbb59c-9149-4dec-a420-38fa9af257b1-7",
+        "image": "/Users/bbqman/HermesAgents/ETC/TimemoreDotScaleApp/_workspace/motion/AB-combo/.hyperframes/artifacts/snapshots/ce8a46c0-7f9e-4323-bb3e-2df051b0b067/frame-07-at-20.6s.png",
+        "time": 20.6,
+        "metadata": {
+          "width": 720,
+          "height": 1600,
+          "zoomScale": 1,
+          "browserGpuMode": "auto",
+          "warnings": [],
+          "partial": false
+        },
+        "createdAt": 1793260084752,
+        "contentHash": "975e1f51c8bdd211a6f2b6542f50d423218f974d50f19788f9329340b4c2cedd",
+        "revision": null,
+        "inputFingerprint": "fe15d5eafd99e420e92515cf164aafbf8eafe40e6b90711c030b459ed4ba57b9",
+        "inputScope": "local-project-files",
+        "attribution": "unversioned"
+      }
+    ]
+  },
+  "renders": {
+    "latest": {
+      "id": "6c81d1de-e7a2-43fa-8f98-b9d87041fdc5",
+      "completedAt": 1793260127526,
+      "output": "/Users/bbqman/HermesAgents/ETC/TimemoreDotScaleApp/_workspace/motion/AB-combo-dark.mp4",
+      "status": "completed",
+      "revision": null
+    },
+    "retainedRevisions": []
+  },
+  "pendingArtifactCleanup": []
+}

@@ -1,0 +1,1223 @@
+{
+  "source": "Timemore Black Mirror SCALE BLE Protocol.md v1.0.3 + 실기기 프로브 A (TES017 펌웨어 v1.0.4, _workspace/04_device_probeA_mac.log)",
+  "crc": {
+    "variant": "NONE",
+    "rxCheck": false,
+    "txValue": "0x0000",
+    "byteOrder": "big",
+    "range": "header..payload",
+    "status": "confirmed",
+    "firmware": "v1.0.4",
+    "note": "펌웨어 v1.0.4는 CRC를 쓰지 않는다: 저울 송신 CRC 필드는 항상 0x0000, 수신 CRC(0x0000/0xFFFF)는 검사하지 않음. 앱은 수신 CRC를 검사하지 않고 송신 CRC는 0x0000. 원문 v1.0.3 §3의 CRC-16/IBM(poly 0x8005, init 0xFFFF)과 충돌, 로그 우선. byteOrder big은 원문 §3 L68 일반 규칙에서 추정한 값으로 미확정(실측 CRC가 0000/FFFF뿐이라 가를 수 없음, v1.0.4에선 영향 없음)",
+    "originalStated": {
+      "name": "CRC-16/IBM",
+      "poly": "0x8005",
+      "init": "0xFFFF"
+    }
+  },
+  "vectors": [
+    {
+      "id": "rx-weight-positive-001",
+      "direction": "rx",
+      "hex": "A55A01010009000004D2000C0005000000",
+      "origin": "derived",
+      "status": "confirmed",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": 1234,
+        "flowRaw": 12,
+        "timerSec": 5,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-weight-zero-001",
+      "direction": "rx",
+      "hex": "A55A010100090000000000000000000000",
+      "origin": "derived",
+      "status": "confirmed",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": 0,
+        "flowRaw": 0,
+        "timerSec": 0,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-weight-negative-001",
+      "direction": "rx",
+      "hex": "A55A01010009FFFFFF0600000000000000",
+      "origin": "derived",
+      "status": "confirmed",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": -250,
+        "flowRaw": 0,
+        "timerSec": 0,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-weight-overload-001",
+      "direction": "rx",
+      "hex": "A55A01010009000075300000000C010000",
+      "origin": "derived",
+      "status": "confirmed",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": 30000,
+        "flowRaw": 0,
+        "timerSec": 12,
+        "overload": true
+      }
+    },
+    {
+      "id": "rx-weight-overload-negative-001",
+      "direction": "rx",
+      "hex": "A55A01010009FFFF8AD000000000010000",
+      "origin": "derived",
+      "status": "confirmed",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": -30000,
+        "flowRaw": 0,
+        "timerSec": 0,
+        "overload": true
+      }
+    },
+    {
+      "id": "rx-weight-max-001",
+      "direction": "rx",
+      "hex": "A55A0101000900004E2003E70E0F000000",
+      "origin": "derived",
+      "status": "confirmed",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": 20000,
+        "flowRaw": 999,
+        "timerSec": 3599,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-weight-flownegative-001",
+      "direction": "rx",
+      "hex": "A55A01010009000005DCFFFB0028000000",
+      "origin": "derived",
+      "status": "confirmed",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": 1500,
+        "flowRaw": -5,
+        "timerSec": 40,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-weight-oz-001",
+      "direction": "rx",
+      "hex": "A55A01010009000006E40023001E000000",
+      "origin": "derived",
+      "status": "confirmed",
+      "unitContext": "oz",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": 1764,
+        "flowRaw": 35,
+        "timerSec": 30,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-timer-notify-001",
+      "direction": "rx",
+      "hex": "A55A01020001010000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "TimerState",
+        "op": "notify",
+        "stateRaw": 1
+      }
+    },
+    {
+      "id": "rx-timer-notify-002",
+      "direction": "rx",
+      "hex": "A55A01020001020000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "TimerState",
+        "op": "notify",
+        "stateRaw": 2
+      }
+    },
+    {
+      "id": "rx-timer-notify-003",
+      "direction": "rx",
+      "hex": "A55A01020001030000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "TimerState",
+        "op": "notify",
+        "stateRaw": 3
+      }
+    },
+    {
+      "id": "rx-timer-read-001",
+      "direction": "rx",
+      "hex": "A55A02020001020000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "TimerState",
+        "op": "read",
+        "stateRaw": 2
+      }
+    },
+    {
+      "id": "rx-timer-writeack-001",
+      "direction": "rx",
+      "hex": "A55A03020001010000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "WriteAck",
+        "cmd": 2,
+        "success": true
+      }
+    },
+    {
+      "id": "rx-timer-writeack-002",
+      "direction": "rx",
+      "hex": "A55A03020001000000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "WriteAck",
+        "cmd": 2,
+        "success": false
+      }
+    },
+    {
+      "id": "rx-battery-notify-001",
+      "direction": "rx",
+      "hex": "A55A0105000203320000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "Battery",
+        "op": "notify",
+        "bars": 3,
+        "percent": 50
+      }
+    },
+    {
+      "id": "rx-battery-read-001",
+      "direction": "rx",
+      "hex": "A55A0205000204640000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "Battery",
+        "op": "read",
+        "bars": 4,
+        "percent": 100
+      }
+    },
+    {
+      "id": "rx-unit-notify-001",
+      "direction": "rx",
+      "hex": "A55A01060001010000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "Unit",
+        "op": "notify",
+        "unitRaw": 1
+      }
+    },
+    {
+      "id": "rx-unit-read-001",
+      "direction": "rx",
+      "hex": "A55A02060001000000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "Unit",
+        "op": "read",
+        "unitRaw": 0
+      }
+    },
+    {
+      "id": "rx-unit-writeack-001",
+      "direction": "rx",
+      "hex": "A55A03060001010000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "WriteAck",
+        "cmd": 6,
+        "success": true
+      }
+    },
+    {
+      "id": "rx-poweroff-writeack-001",
+      "direction": "rx",
+      "hex": "A55A030B0001010000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "WriteAck",
+        "cmd": 11,
+        "success": true
+      }
+    },
+    {
+      "id": "rx-name-read-001",
+      "direction": "rx",
+      "hex": "A55A020C00064D7920446F740000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "DeviceName",
+        "name": "My Dot"
+      }
+    },
+    {
+      "id": "rx-name-read-002",
+      "direction": "rx",
+      "hex": "A55A020C001054494D454D4F52452D444F542D3030310000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "DeviceName",
+        "name": "TIMEMORE-DOT-001"
+      }
+    },
+    {
+      "id": "rx-name-writeack-001",
+      "direction": "rx",
+      "hex": "A55A030C0001010000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "WriteAck",
+        "cmd": 12,
+        "success": true
+      }
+    },
+    {
+      "id": "rx-tare-writeack-001",
+      "direction": "rx",
+      "hex": "A55A030D0001010000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "WriteAck",
+        "cmd": 13,
+        "success": true
+      }
+    },
+    {
+      "id": "rx-tare-writeack-002",
+      "direction": "rx",
+      "hex": "A55A030D0001000000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "WriteAck",
+        "cmd": 13,
+        "success": false
+      }
+    },
+    {
+      "id": "rx-firmware-read-001",
+      "direction": "rx",
+      "hex": "A55A0210000676312E302E340000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "FirmwareVersion",
+        "version": "v1.0.4"
+      }
+    },
+    {
+      "id": "rx-factoryreset-writeack-001",
+      "direction": "rx",
+      "hex": "A55A03190001010000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "WriteAck",
+        "cmd": 25,
+        "success": true
+      }
+    },
+    {
+      "id": "rx-forget-writeack-001",
+      "direction": "rx",
+      "hex": "A55A031A0001010000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "WriteAck",
+        "cmd": 26,
+        "success": true
+      }
+    },
+    {
+      "id": "rx-unknown-cmd-001",
+      "direction": "rx",
+      "hex": "A55A017F0001000000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "Unknown",
+        "opcode": 1,
+        "cmd": 127,
+        "payloadHex": "00"
+      }
+    },
+    {
+      "id": "rx-crc-bad-001",
+      "direction": "rx",
+      "hex": "A55A01010009000004D2000C0005004106",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": 1234,
+        "flowRaw": 12,
+        "timerSec": 5,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-length-mismatch-001",
+      "direction": "rx",
+      "hex": "A55A01010008000004D2000C00050000",
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "error": "LengthMismatch",
+        "cmd": 1,
+        "expectedLen": 9,
+        "actualLen": 8
+      }
+    },
+    {
+      "id": "rx-garbage-prefix-001",
+      "direction": "rx",
+      "hex": "00FFA5A55A01010009000004D2000C0005000000",
+      "origin": "derived",
+      "status": "confirmed",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": 1234,
+        "flowRaw": 12,
+        "timerSec": 5,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-two-frames-001",
+      "direction": "rx",
+      "hex": "A55A010100090000006400030001000000A55A010100090000006E00040001000000",
+      "origin": "derived",
+      "status": "confirmed",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": 100,
+          "flowRaw": 3,
+          "timerSec": 1,
+          "overload": false
+        },
+        {
+          "type": "WeightReport",
+          "weightRaw": 110,
+          "flowRaw": 4,
+          "timerSec": 1,
+          "overload": false
+        }
+      ]
+    },
+    {
+      "id": "rx-split-001",
+      "direction": "rx",
+      "hex": [
+        "A55A01010009000004D2",
+        "000C0005000000"
+      ],
+      "origin": "derived",
+      "status": "confirmed",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": 1234,
+        "flowRaw": 12,
+        "timerSec": 5,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-split-name-001",
+      "direction": "rx",
+      "hex": [
+        "A55A020C001054494D454D4F52452D444F542D30",
+        "30310000"
+      ],
+      "origin": "derived",
+      "status": "confirmed",
+      "expect": {
+        "type": "DeviceName",
+        "name": "TIMEMORE-DOT-001"
+      }
+    },
+    {
+      "id": "tx-timer-read-001",
+      "direction": "tx",
+      "hex": "A55A020200000000",
+      "origin": "device",
+      "status": "confirmed",
+      "command": {
+        "type": "ReadTimer"
+      },
+      "evidence": "_workspace/04_device_probeA_mac.log:3655"
+    },
+    {
+      "id": "tx-timer-start-001",
+      "direction": "tx",
+      "hex": "A55A03020001010000",
+      "origin": "device",
+      "status": "confirmed",
+      "command": {
+        "type": "SetTimer",
+        "action": "start"
+      },
+      "evidence": "_workspace/04_device_probeA_mac.log:3894"
+    },
+    {
+      "id": "tx-timer-pause-001",
+      "direction": "tx",
+      "hex": "A55A03020001020000",
+      "origin": "device",
+      "status": "confirmed",
+      "command": {
+        "type": "SetTimer",
+        "action": "pause"
+      },
+      "evidence": "_workspace/04_device_probeA_mac.log:3957"
+    },
+    {
+      "id": "tx-timer-reset-001",
+      "direction": "tx",
+      "hex": "A55A03020001030000",
+      "origin": "device",
+      "status": "confirmed",
+      "command": {
+        "type": "SetTimer",
+        "action": "reset"
+      },
+      "evidence": "_workspace/04_device_probeA_mac.log:3973"
+    },
+    {
+      "id": "tx-battery-read-001",
+      "direction": "tx",
+      "hex": "A55A020500000000",
+      "origin": "device",
+      "status": "confirmed",
+      "command": {
+        "type": "ReadBattery"
+      },
+      "evidence": "_workspace/04_device_probeA_mac.log:3605"
+    },
+    {
+      "id": "tx-unit-read-001",
+      "direction": "tx",
+      "hex": "A55A020600000000",
+      "origin": "device",
+      "status": "confirmed",
+      "command": {
+        "type": "ReadUnit"
+      },
+      "evidence": "_workspace/04_device_probeA_mac.log:3587"
+    },
+    {
+      "id": "tx-unit-write-001",
+      "direction": "tx",
+      "hex": "A55A03060001000000",
+      "origin": "derived",
+      "status": "unconfirmed",
+      "command": {
+        "type": "SetUnit",
+        "unit": "g"
+      }
+    },
+    {
+      "id": "tx-unit-write-002",
+      "direction": "tx",
+      "hex": "A55A03060001010000",
+      "origin": "derived",
+      "status": "unconfirmed",
+      "command": {
+        "type": "SetUnit",
+        "unit": "oz"
+      }
+    },
+    {
+      "id": "tx-poweroff-001",
+      "direction": "tx",
+      "hex": "A55A030B00000000",
+      "origin": "derived",
+      "status": "unconfirmed",
+      "command": {
+        "type": "PowerOff"
+      }
+    },
+    {
+      "id": "tx-name-read-001",
+      "direction": "tx",
+      "hex": "A55A020C00000000",
+      "origin": "device",
+      "status": "confirmed",
+      "command": {
+        "type": "ReadName"
+      },
+      "evidence": "_workspace/04_device_probeA_mac.log:3621"
+    },
+    {
+      "id": "tx-name-write-001",
+      "direction": "tx",
+      "hex": "A55A030C00064D7920446F740000",
+      "origin": "derived",
+      "status": "unconfirmed",
+      "command": {
+        "type": "SetName",
+        "name": "My Dot"
+      }
+    },
+    {
+      "id": "tx-name-write-max-001",
+      "direction": "tx",
+      "hex": "A55A030C001054494D454D4F52452D444F542D3030310000",
+      "origin": "derived",
+      "status": "unconfirmed",
+      "command": {
+        "type": "SetName",
+        "name": "TIMEMORE-DOT-001"
+      }
+    },
+    {
+      "id": "tx-name-write-truncate-001",
+      "direction": "tx",
+      "hex": "A55A030C000FECBBA4ED94BCECA080EC9AB8ED959C0000",
+      "origin": "derived",
+      "status": "unconfirmed",
+      "command": {
+        "type": "SetName",
+        "name": "커피저울한글이름"
+      }
+    },
+    {
+      "id": "tx-name-write-empty-001",
+      "direction": "tx",
+      "hex": null,
+      "origin": "derived",
+      "status": "confirmed",
+      "command": {
+        "type": "SetName",
+        "name": ""
+      },
+      "expect": {
+        "error": "InvalidName"
+      }
+    },
+    {
+      "id": "tx-tare-001",
+      "direction": "tx",
+      "hex": "A55A030D00000000",
+      "origin": "device",
+      "status": "confirmed",
+      "command": {
+        "type": "Tare"
+      },
+      "evidence": "_workspace/04_device_probeA_mac.log:2102"
+    },
+    {
+      "id": "tx-firmware-read-001",
+      "direction": "tx",
+      "hex": "A55A021000000000",
+      "origin": "device",
+      "status": "confirmed",
+      "command": {
+        "type": "ReadFirmware"
+      },
+      "evidence": "_workspace/04_device_probeA_mac.log:3639"
+    },
+    {
+      "id": "tx-factoryreset-001",
+      "direction": "tx",
+      "hex": "A55A031900000000",
+      "origin": "derived",
+      "status": "unconfirmed",
+      "command": {
+        "type": "FactoryReset"
+      }
+    },
+    {
+      "id": "tx-forget-001",
+      "direction": "tx",
+      "hex": "A55A031A00000000",
+      "origin": "derived",
+      "status": "unconfirmed",
+      "command": {
+        "type": "ForgetDevice"
+      }
+    },
+    {
+      "id": "rx-weight-zero-002",
+      "direction": "rx",
+      "hex": "A55A010100090000000000000000000000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:10",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": 0,
+        "flowRaw": 0,
+        "timerSec": 0,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-weight-negative-002",
+      "direction": "rx",
+      "hex": "A55A01010009FFFFF7AA00000000000000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:3299",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": -2134,
+        "flowRaw": 0,
+        "timerSec": 0,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-weight-positive-002",
+      "direction": "rx",
+      "hex": "A55A01010009000005AA00000000000000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:13439",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": 1450,
+        "flowRaw": 0,
+        "timerSec": 0,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-weight-timer-001",
+      "direction": "rx",
+      "hex": "A55A01010009FFFFF7AA00000001000000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:3908",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": -2134,
+        "flowRaw": 0,
+        "timerSec": 1,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-weight-flow-001",
+      "direction": "rx",
+      "hex": "A55A010100090000088F00610000000000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:14129",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": 2191,
+        "flowRaw": 97,
+        "timerSec": 0,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-weight-flowmax-001",
+      "direction": "rx",
+      "hex": "A55A01010009000019BE03E70000000000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:6735",
+      "unitContext": "g",
+      "expect": {
+        "type": "WeightReport",
+        "weightRaw": 6590,
+        "flowRaw": 999,
+        "timerSec": 0,
+        "overload": false
+      }
+    },
+    {
+      "id": "rx-two-frames-002",
+      "direction": "rx",
+      "hex": "A55A010100090000000000000000000000A55A0105000203640000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:238",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": 0,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "Battery",
+          "op": "notify",
+          "bars": 3,
+          "percent": 100
+        }
+      ]
+    },
+    {
+      "id": "rx-two-frames-003",
+      "direction": "rx",
+      "hex": "A55A0105000203640000A55A010100090000000000000000000000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:10823",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "Battery",
+          "op": "notify",
+          "bars": 3,
+          "percent": 100
+        },
+        {
+          "type": "WeightReport",
+          "weightRaw": 0,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        }
+      ]
+    },
+    {
+      "id": "rx-two-frames-004",
+      "direction": "rx",
+      "hex": "A55A010100090000000000000000000000A55A010100090000000000000000000000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:6748",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": 0,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "WeightReport",
+          "weightRaw": 0,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        }
+      ]
+    },
+    {
+      "id": "rx-tare-writeack-003",
+      "direction": "rx",
+      "hex": "A55A010100090000000000000000000000A55A030D0001010000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:2104",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": 0,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "WriteAck",
+          "cmd": 13,
+          "success": true
+        }
+      ]
+    },
+    {
+      "id": "rx-tare-writeack-004",
+      "direction": "rx",
+      "hex": "A55A010100090000085600000000000000A55A030D0001010000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:2726",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": 2134,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "WriteAck",
+          "cmd": 13,
+          "success": true
+        }
+      ]
+    },
+    {
+      "id": "rx-tare-preweight-seq-001",
+      "direction": "rx",
+      "hex": [
+        "A55A01010009000005AA00000000000000A55A030D0001010000",
+        "A55A01010009000005AA00000000000000",
+        "A55A01010009000005AA00000000000000",
+        "A55A010100090000000000000000000000"
+      ],
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:13753-13756",
+      "note": "C-0D-2: 0x0D 성공 응답 뒤 무게 알림 2개도 영점 전 값(145.0 g), 0 g는 응답 뒤 297 ms(log:13756)부터. 배열 원소 하나 = 알림 하나(받은 순서)",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": 1450,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "WriteAck",
+          "cmd": 13,
+          "success": true
+        },
+        {
+          "type": "WeightReport",
+          "weightRaw": 1450,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "WeightReport",
+          "weightRaw": 1450,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "WeightReport",
+          "weightRaw": 0,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        }
+      ]
+    },
+    {
+      "id": "rx-unit-read-002",
+      "direction": "rx",
+      "hex": "A55A01010009FFFFF7AA00000000000000A55A02060001000000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:3589",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": -2134,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "Unit",
+          "op": "read",
+          "unitRaw": 0
+        }
+      ]
+    },
+    {
+      "id": "rx-battery-read-002",
+      "direction": "rx",
+      "hex": "A55A01010009FFFFF7AA00000000000000A55A0205000203640000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:3607",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": -2134,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "Battery",
+          "op": "read",
+          "bars": 3,
+          "percent": 100
+        }
+      ]
+    },
+    {
+      "id": "rx-name-read-003",
+      "direction": "rx",
+      "hex": "A55A01010009FFFFF7AA00000000000000A55A020C000C54494D454D4F52455F446F740000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:3623",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": -2134,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "DeviceName",
+          "name": "TIMEMORE_Dot"
+        }
+      ]
+    },
+    {
+      "id": "rx-firmware-read-002",
+      "direction": "rx",
+      "hex": "A55A01010009FFFFF7AA00000000000000A55A0210000676312E302E340000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:3641",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": -2134,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "FirmwareVersion",
+          "version": "v1.0.4"
+        }
+      ]
+    },
+    {
+      "id": "rx-timer-read-002",
+      "direction": "rx",
+      "hex": "A55A01010009FFFFF7AA00000000000000A55A02020001030000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:3658",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": -2134,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "TimerState",
+          "op": "read",
+          "stateRaw": 3
+        }
+      ]
+    },
+    {
+      "id": "rx-timer-read-003",
+      "direction": "rx",
+      "hex": "A55A01010009FFFFF7AA00000000000000A55A02020001020000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:3700",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": -2134,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "TimerState",
+          "op": "read",
+          "stateRaw": 2
+        }
+      ]
+    },
+    {
+      "id": "rx-timer-read-004",
+      "direction": "rx",
+      "hex": "A55A01010009FFFFF7AA00000004000000A55A02020001010000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:3945",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": -2134,
+          "flowRaw": 0,
+          "timerSec": 4,
+          "overload": false
+        },
+        {
+          "type": "TimerState",
+          "op": "read",
+          "stateRaw": 1
+        }
+      ]
+    },
+    {
+      "id": "rx-multi-frames-001",
+      "direction": "rx",
+      "hex": "A55A01010009FFFFF7AA00000000000000A55A03020001010000A55A0104000501000000000000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:3677",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": -2134,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "WriteAck",
+          "cmd": 2,
+          "success": true
+        },
+        {
+          "type": "Unknown",
+          "opcode": 1,
+          "cmd": 4,
+          "payloadHex": "0100000000"
+        }
+      ]
+    },
+    {
+      "id": "rx-multi-frames-002",
+      "direction": "rx",
+      "hex": "A55A01010009FFFFF7AA00000000000000A55A03020001010000A55A0104000502000000000000A55A0104000501000000000000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:3715",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": -2134,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "WriteAck",
+          "cmd": 2,
+          "success": true
+        },
+        {
+          "type": "Unknown",
+          "opcode": 1,
+          "cmd": 4,
+          "payloadHex": "0200000000"
+        },
+        {
+          "type": "Unknown",
+          "opcode": 1,
+          "cmd": 4,
+          "payloadHex": "0100000000"
+        }
+      ]
+    },
+    {
+      "id": "rx-multi-frames-003",
+      "direction": "rx",
+      "hex": "A55A01010009FFFFF7AA00000000000000A55A03020001010000A55A0104000500000000000000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:3897",
+      "unitContext": "g",
+      "expect": [
+        {
+          "type": "WeightReport",
+          "weightRaw": -2134,
+          "flowRaw": 0,
+          "timerSec": 0,
+          "overload": false
+        },
+        {
+          "type": "WriteAck",
+          "cmd": 2,
+          "success": true
+        },
+        {
+          "type": "Unknown",
+          "opcode": 1,
+          "cmd": 4,
+          "payloadHex": "0000000000"
+        }
+      ]
+    },
+    {
+      "id": "rx-unknown-cmd-002",
+      "direction": "rx",
+      "hex": "A55A0104000500000000000000",
+      "origin": "device",
+      "status": "confirmed",
+      "evidence": "_workspace/04_device_probeA_mac.log:3897 (세 번째 프레임만 잘라냄)",
+      "expect": {
+        "type": "Unknown",
+        "opcode": 1,
+        "cmd": 4,
+        "payloadHex": "0000000000"
+      }
+    }
+  ]
+}

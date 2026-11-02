@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=720, height=1600" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Roboto"; src: url("assets/fonts/Roboto.ttf"); font-weight: 100 900; }
+      @font-face { font-family: "Noto Sans KR"; src: url("assets/fonts/NotoSansKR.ttf"); font-weight: 100 900; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 720px; height: 1600px; overflow: hidden; background: #fff8f5; }
+      #root { position: relative; width: 100%; height: 100%; background: #fff8f5; font-family: "Roboto", "Noto Sans KR", sans-serif; color: #211a16; }
+      /* 1 dp = 2 px: the whole phone screen is laid out in dp and scaled once */
+      #app { position: absolute; left: 0; top: 0; width: 360px; height: 800px; transform: scale(2); transform-origin: 0 0; }
+      .layer { position: absolute; inset: 0; }
+      .abs { position: absolute; }
+      [hidden] { display: none !important; }
+      .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+      .m { font-weight: 500; }
+      .pill { position: absolute; border-radius: 9999px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 16px; font-weight: 500; overflow: hidden; }
+      .pill svg { width: 24px; height: 24px; flex: none; }
+      .primary { background: #6f4a2e; color: #ffffff; }
+      .outlined { border: 1px solid #847469; color: #6f4a2e; }
+      .tonal { background: #f8decf; color: #261911; }
+      .disabled { background: rgba(33, 26, 22, 0.12); color: rgba(33, 26, 22, 0.38); }
+      .topbar { left: 0; top: 24px; width: 360px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 400; }
+      .lbl { font-size: 12px; line-height: 16px; font-weight: 500; color: #52443b; }
+      .val36 { font-size: 36px; line-height: 48px; font-weight: 500; }
+      .stack { display: inline-grid; }
+      .stack > * { grid-area: 1 / 1; text-align: right; }
+      .tab { position: absolute; top: 0; width: 120px; height: 80px; display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 4px; font-size: 12px; font-weight: 500; color: #52443b; }
+      .tab .ind { width: 64px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
+      .tab svg { width: 24px; height: 24px; }
+      .cell { position: absolute; top: 104px; width: 104px; height: 72px; border-radius: 28px; background: #f0e5df; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="21" data-fps="60" data-width="720" data-height="1600">
+      <div id="app">
+        <!-- ===== S1 추출 ===== -->
+        <div id="s1" class="layer">
+          <div id="ff" class="abs num m" style="left: 140px; top: 2px; width: 80px; height: 20px; border-radius: 10px; background: #362f2b; color: #fceee8; font-size: 12px; line-height: 20px; text-align: center" hidden>5× 빨리 감기</div>
+          <div class="abs topbar">V60 기본 ▾</div>
+          <svg class="abs" style="left: 312px; top: 44px; width: 24px; height: 24px" viewBox="0 0 24 24"><path fill="#52443b" d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z" /></svg>
+          <div class="abs m" style="left: 16px; top: 96px; width: 96px; height: 32px; border-radius: 12px; background: #b4efdc; color: #002019; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 6px">
+            <svg style="width: 18px; height: 18px" viewBox="0 0 24 24"><path fill="#002019" d="M7 12l-2-2-2 2 2 2 2-2zm10.71-4.29L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88zM19 10l-2 2 2 2 2-2-2-2z" /></svg>연결됨
+          </div>
+          <div class="abs num" style="right: 16px; top: 100px; height: 24px; display: flex; align-items: center; gap: 2px; font-size: 14px; color: #52443b">
+            <svg style="width: 20px; height: 20px" viewBox="0 0 24 24"><path fill="#52443b" d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" /></svg>82%
+          </div>
+          <!-- 무게: 306 dp 상자 끝 정렬, 단위 x 331 기준선 맞춤 -->
+          <div class="abs" style="left: 17px; top: 144px; height: 92px; display: flex; align-items: baseline">
+            <span id="weight" class="num m" style="display: inline-block; width: 306px; text-align: right; font-size: 84px; line-height: 92px">312.6</span>
+            <span style="margin-left: 8px; font-size: 22px; line-height: 92px; color: #52443b">g</span>
+          </div>
+          <div class="abs" style="left: 16px; top: 268px; width: 156px">
+            <div class="lbl">시간</div>
+            <div id="timer" class="num val36">00:00.0</div>
+          </div>
+          <div class="abs" style="left: 188px; top: 268px; width: 156px">
+            <div class="lbl">유량 g/s</div>
+            <div class="stack num val36"><span style="visibility: hidden">888.8</span><span id="flow">0.0</span></div>
+          </div>
+          <!-- 리본 그래프 -->
+          <svg id="graph" class="abs" style="left: 0; top: 0; width: 360px; height: 800px; overflow: visible" viewBox="0 0 360 800"><g id="axes1"></g><g id="dyn1"></g></svg>
+          <!-- 대기 배너 -->
+          <div id="banner" class="abs" style="left: 16px; top: 576px; width: 328px; height: 48px; border-radius: 20px; background: #f0e5df; display: flex; align-items: center; gap: 12px; padding: 0 16px; font-size: 14px; color: #211a16">
+            <svg style="width: 24px; height: 24px; flex: none" viewBox="0 0 24 24"><path fill="#52443b" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" /></svg>물을 부으면 타이머가 시작됩니다
+          </div>
+          <!-- 단계 조약돌 카드 -->
+          <div id="card" class="abs" style="left: 16px; top: 540px; width: 328px; height: 136px; border-radius: 28px; background: #f0e5df; padding: 16px; display: flex; flex-direction: column; gap: 4px">
+            <div id="c1" class="num m" style="font-size: 14px; line-height: 20px; color: #52443b"></div>
+            <div id="c2" class="m" style="font-size: 16px; line-height: 24px; max-height: 48px; overflow: hidden; word-break: keep-all"></div>
+            <div id="c3" class="num m" style="font-size: 16px; line-height: 24px"></div>
+          </div>
+          <!-- 동작 줄: Idle·WaitingForPour (y 644) -->
+          <div id="rowIdle">
+            <div id="zeroBtn" class="pill tonal" style="left: 16px; top: 644px; width: 96px; height: 64px">
+              <div id="zeroRipple" class="abs" style="left: 48px; top: 32px; width: 0; height: 0; border-radius: 50%; background: #261911; opacity: 0"></div>
+              <svg id="zeroSpin" class="abs" style="left: 10px; top: 22px; width: 20px; height: 20px" hidden viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.5" fill="none" stroke="#261911" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="40 14" /></svg>
+              <span>영점</span>
+            </div>
+            <div class="pill primary" style="left: 124px; top: 644px; width: 112px; height: 64px">
+              <svg viewBox="0 0 24 24"><path fill="#ffffff" d="M8 5v14l11-7z" /></svg><span id="startLbl">시작</span>
+            </div>
+            <div id="cancelBtn" class="pill outlined" style="left: 248px; top: 644px; width: 96px; height: 64px">취소</div>
+          </div>
+          <!-- 동작 줄: Running (y 700) -->
+          <div id="rowRun">
+            <div class="pill disabled" data-layout-ignore style="left: 16px; top: 700px; width: 96px; height: 64px">영점</div>
+            <div class="pill primary" style="left: 124px; top: 700px; width: 112px; height: 64px">
+              <svg viewBox="0 0 24 24"><path fill="#ffffff" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>일시정지
+            </div>
+            <div class="pill outlined" style="left: 248px; top: 700px; width: 96px; height: 64px">완료</div>
+          </div>
+          <!-- 하단 탭 -->
+          <div id="tabs" class="abs" style="left: 0; top: 720px; width: 360px; height: 80px; background: #f6ebe5">
+            <div class="tab" style="left: 0; color: #211a16">
+              <div class="ind" style="background: #f8decf"><svg viewBox="0 0 24 24"><path fill="#261911" d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.9 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z" /></svg></div>추출
+            </div>
+            <div class="tab" style="left: 120px">
+              <div class="ind"><svg viewBox="0 0 24 24"><path fill="#52443b" d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" /></svg></div>레시피
+            </div>
+            <div class="tab" style="left: 240px">
+              <div class="ind"><svg viewBox="0 0 24 24"><path fill="#52443b" d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" /></svg></div>기록
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== S6 추출 요약 ===== -->
+        <div id="s6" class="layer" style="opacity: 0">
+          <div class="abs topbar">추출 요약</div>
+          <div class="cell" style="left: 16px"><div class="lbl">무게</div><div class="num m" style="font-size: 22px; line-height: 28px">250.0 g</div></div>
+          <div class="cell" style="left: 128px"><div class="lbl">시간</div><div class="num m" style="font-size: 22px; line-height: 28px">1:35</div></div>
+          <div class="cell" style="left: 240px"><div class="lbl">비율</div><div class="num m" style="font-size: 22px; line-height: 28px">1:16.7</div></div>
+          <svg id="graph6" class="abs" style="left: 0; top: 0; width: 360px; height: 800px; overflow: visible" viewBox="0 0 360 800"></svg>
+          <div class="abs" style="left: 16px; top: 448px; width: 328px; height: 56px; border: 1px solid #847469; border-radius: 20px; display: flex; align-items: center; padding: 0 16px; font-size: 16px">
+            <span class="lbl" style="position: absolute; left: 12px; top: -9px; padding: 0 4px; background: #fff8f5; font-weight: 400">원두량</span>
+            <span class="num">15.0 g</span>
+          </div>
+          <div class="pill outlined" style="left: 16px; top: 712px; width: 160px; height: 56px">버리기</div>
+          <div class="pill primary" style="left: 184px; top: 712px; width: 160px; height: 56px">저장</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // DATA-BEGIN (명세 6.4 그대로)
+      const TAU = 2 * Math.PI;
+      function w(t) {
+        if (t < 0) return 0;
+        if (t <= 10) { const x = t / 10; return 61 * (x - 0.5 * Math.sin(TAU * x) / TAU); }
+        if (t <= 40) return 61;
+        if (t <= 90) { const x = (t - 40) / 50;
+          return 61 + 189 * (x - 0.5 * Math.sin(TAU * x) / TAU - 0.3 * Math.sin(8 * TAU * x) / (8 * TAU)); }
+        return 250;
+      }
+      const raw = (k) => Math.round(w(k / 10) * 10);
+      const scaleFlow = (k) => Math.min(Math.max(raw(k) - raw(k - 10), 0), 999);
+      const shownFlow = (k) => { let s = 0; for (let j = k - 9; j <= k; j++) s += scaleFlow(j); return s / 100; };
+      function springStep(s, target, k, zeta, dt) {
+        const c = 2 * zeta * Math.sqrt(k), h = dt / 4;
+        for (let i = 0; i < 4; i++) { const a = -k * (s.x - target) - c * s.v; s.v += a * h; s.x += s.v * h; }
+      }
+      // DATA-END
+
+      const fmt1 = (x) => (x < 0 ? "−" : "") + Math.abs(x).toFixed(1);
+      const lerp = (a, b, u) => a + (b - a) * u;
+      const clamp01 = (u) => Math.max(0, Math.min(1, u));
+      // unit-step response of a spring token, t seconds after the step
+      function springAt(k, zeta, t) {
+        if (t <= 0) return 0;
+        const s = { x: 0, v: 0 }, n = Math.floor(t * 60);
+        for (let i = 0; i < n; i++) springStep(s, 1, k, zeta, 1 / 60);
+        springStep(s, 1, k, zeta, t - n / 60);
+        return s.x;
+      }
+      function bez(x1, y1, x2, y2) {
+        return (t) => {
+          if (t <= 0) return 0; if (t >= 1) return 1;
+          let lo = 0, hi = 1, u = 0.5;
+          for (let i = 0; i < 30; i++) { u = (lo + hi) / 2; const x = 3 * (1 - u) * (1 - u) * u * x1 + 3 * (1 - u) * u * u * x2 + u * u * u; if (x < t) lo = u; else hi = u; }
+          return 3 * (1 - u) * (1 - u) * u * y1 + 3 * (1 - u) * u * u * y2 + u * u * u;
+        };
+      }
+      const easeRipple = bez(0.05, 0.7, 0.1, 1), easeTint = bez(0.4, 0, 0.2, 1);
+      const mixHex = (a, b, u) => "#" + [0, 2, 4].map((i) => Math.round(lerp(parseInt(a.substr(i + 1, 2), 16), parseInt(b.substr(i + 1, 2), 16), u)).toString(16).padStart(2, "0")).join("");
+
+      // 그림 영역 매핑(dp). 범위 x 0–99 s, y 0–275 g
+      const mapFor = (x0, x1, y0, y1) => ({ x0, x1, y0, y1, X: (t) => x0 + (t * (x1 - x0)) / 99, Y: (g) => y1 - (g * (y1 - y0)) / 275 });
+      const M1 = mapFor(48, 336, 372, 504);
+      const M6 = mapFor(48, 336, 200, 408);
+
+      // 모양 겹 시뮬레이션: 앱 시간 tau(초)를 1/60 s로 적분. 머리 = motion.follow, f = motion.calm
+      const SIM = [];
+      {
+        const hx = { x: M1.X(0), v: 0 }, hy = { x: M1.Y(0), v: 0 }, fs = { x: 0, v: 0 };
+        let prevK = 0;
+        for (let i = 0; i <= 96 * 60; i++) {
+          const k = Math.floor(i / 6 + 1e-9);
+          const tx = M1.X(k / 10), ty = M1.Y(Math.max(0, raw(k) / 10)); // 음수 무게는 0으로 자름
+          if (Math.abs(raw(k) - raw(prevK)) > 500) { hx.x = tx; hy.x = ty; hx.v = hy.v = 0; } // 50 g 넘는 변화 = 순간 이동
+          prevK = k;
+          SIM.push({ hx: hx.x, hy: hy.x, vx: hx.v, vy: hy.v, f: fs.x });
+          springStep(hx, tx, 1500, 1, 1 / 60);
+          springStep(hy, ty, 1500, 1, 1 / 60);
+          springStep(fs, shownFlow(k), 200, 1, 1 / 60);
+        }
+      }
+      const simAt = (tau) => SIM[Math.max(0, Math.min(SIM.length - 1, Math.round(tau * 60)))];
+      const ribbonW = (f) => Math.min(10, 2.5 + 0.9 * f);
+      const SAMPLE_W = []; for (let j = 0; j <= 960; j++) SAMPLE_W.push(ribbonW(SIM[j * 6].f));
+
+      // 영상 시간 v → 앱 타이머 tau (②③ 1×, ④ 1× → 5× → 완료 후 정지)
+      function tauAt(v) {
+        if (v < 3) return null;
+        if (v < 14) return v - 3;
+        if (v < 18) return 86 + (v - 14);
+        if (v < 19) return 90 + 5 * (v - 18);
+        return 95;
+      }
+
+      // AppShape.drop 일반화: D = 원 중심→끝 거리(단위), s = 0 물방울 … 1 원. D 92, s 0이면 명세 경로와 같다.
+      function dropPath(D, s) {
+        const a = lerp(0, 23.2, s), b = lerp(0.37 * D, 23.2, s), Dm = lerp(D, 42, s);
+        const by1 = lerp(118, 115.2, s), bx = lerp(73, 73.2, s), by2 = lerp(140, 134, s), ty = 92 - Dm;
+        return `M50 ${ty}C${50 + a} ${ty} 92 ${92 - b} 92 92C92 ${by1} ${bx} ${by2} 50 ${by2}C${100 - bx} ${by2} 8 ${by1} 8 92C8 ${92 - b} ${50 - a} ${ty} 50 ${ty}Z`;
+      }
+      const DROP = dropPath(92, 0);
+
+      // 굵기가 변하는 리본: 중심점과 법선 ±굵기/2로 닫힌 경로, 끝은 둥근 원
+      function ribbonSvg(pts) {
+        if (pts.length === 0) return "";
+        if (pts.length === 1) return `<circle cx="${pts[0][0]}" cy="${pts[0][1]}" r="${pts[0][2] / 2}" fill="#6f4a2e"/>`;
+        const up = [], lo = [];
+        for (let i = 0; i < pts.length; i++) {
+          const p = pts[Math.max(0, i - 1)], n = pts[Math.min(pts.length - 1, i + 1)];
+          let dx = n[0] - p[0], dy = n[1] - p[1]; const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+          const h = pts[i][2] / 2;
+          up.push(`${(pts[i][0] - dy * h).toFixed(2)} ${(pts[i][1] + dx * h).toFixed(2)}`);
+          lo.push(`${(pts[i][0] + dy * h).toFixed(2)} ${(pts[i][1] - dx * h).toFixed(2)}`);
+        }
+        const a = pts[0], z = pts[pts.length - 1];
+        return `<path d="M${up.join("L")}L${lo.reverse().join("L")}Z" fill="#6f4a2e"/>` +
+          `<circle cx="${a[0]}" cy="${a[1]}" r="${a[2] / 2}" fill="#6f4a2e"/><circle cx="${z[0]}" cy="${z[1]}" r="${z[2] / 2}" fill="#6f4a2e"/>`;
+      }
+      // shortcut: 표본(0.1 s = 0.29 dp 간격)을 직선으로 잇는다. 단조 3차 보간은 이 밀도에서 1 px 미만 차이라 생략, 축을 확대하면 Fritsch–Carlson으로 바꾼다.
+      function samplePts(M, kEnd, tauEnd) {
+        const pts = [];
+        for (let j = 0; j <= kEnd && j / 10 < tauEnd; j++) pts.push([M.X(j / 10), M.Y(raw(j) / 10), SAMPLE_W[j]]);
+        return pts;
+      }
+      function marker(x, y, filled, sc) {
+        const t = `translate(${x} ${y}) scale(${0.1 * sc}) translate(-50 -70)`;
+        return filled
+          ? `<path d="${DROP}" transform="${t}" fill="#2f6a5a"/>`
+          : `<path d="${DROP}" transform="${t}" fill="#fff8f5" stroke="#52443b" stroke-width="15"/>`;
+      }
+      function head(x, y, angDeg, scale, D, s) {
+        return `<path d="${dropPath(D, s)}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${angDeg.toFixed(1)}) scale(${scale}) translate(-50 -92)" fill="#6f4a2e"/>`;
+      }
+      // 축·격자·라벨·범례(정지)
+      function axesSvg(M, legendY, lx = 0) {
+        let s = "";
+        for (const g of [0, 100, 200]) s += `<line x1="${M.x0}" x2="${M.x1}" y1="${M.Y(g)}" y2="${M.Y(g)}" stroke="#d7c3b7" stroke-width="1"/>`;
+        for (const t of [0, 30, 60, 90]) s += `<line x1="${M.X(t)}" x2="${M.X(t)}" y1="${M.y0}" y2="${M.y1}" stroke="#d7c3b7" stroke-width="1"/>`;
+        const txt = (x, y, anchor, str) => `<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="central" font-size="12" font-weight="500" fill="#52443b" style="font-variant-numeric:tabular-nums;font-feature-settings:'tnum'">${str}</text>`;
+        for (const g of [0, 100, 200]) s += txt(44, M.Y(g), "end", g);
+        s += txt(44, M.y0 + 4, "end", "g");
+        for (const t of [0, 30, 60, 90]) s += txt(M.X(t), M.y1 + 12, "middle", t);
+        s += txt(M.x1, M.y1 + 12, "end", "s");
+        // 범례: 굵기 변하는 짧은 리본 + 실제, 점선 + 목표
+        const ly = legendY + 8; // lx: 범례를 왼쪽으로 밀어 250 g 꼭짓점 표식과 겹치지 않게
+        s += `<path d="M${206 + lx} ${ly - 1.25}C${216 + lx} ${ly - 1.25} ${222 + lx} ${ly - 4} ${230 + lx} ${ly - 4}L${230 + lx} ${ly + 4}C${222 + lx} ${ly + 4} ${216 + lx} ${ly + 1.25} ${206 + lx} ${ly + 1.25}Z" fill="#6f4a2e"/>`;
+        s += txt(234 + lx, ly, "start", "실제");
+        s += `<line x1="${270 + lx}" x2="${296 + lx}" y1="${ly}" y2="${ly}" stroke="#847469" stroke-width="2" stroke-dasharray="8 6"/>`;
+        s += txt(300 + lx, ly, "start", "목표");
+        return s;
+      }
+      // 목표선 (0,0)→(10,60)→(90,250). 양옆 1 dp surface 테두리, 리본보다 위 겹
+      function targetSvg(M, w2) {
+        const seg = (t0, g0, t1, g1, sw) =>
+          `<line x1="${M.X(t0)}" y1="${M.Y(g0)}" x2="${M.X(t1)}" y2="${M.Y(g1)}" stroke="#fff8f5" stroke-width="${sw + 2}"/>` +
+          `<line x1="${M.X(t0)}" y1="${M.Y(g0)}" x2="${M.X(t1)}" y2="${M.Y(g1)}" stroke="#847469" stroke-width="${sw}" stroke-dasharray="8 6"/>`;
+        return seg(0, 0, 10, 60, 2) + seg(10, 60, 90, 250, w2);
+      }
+
+      // S6 스냅숏(정지): 0–95 s 리본, 꼭짓점 채움, 완료된 원 머리
+      {
+        const M = M6, pts = samplePts(M, 950, 95.01);
+        document.getElementById("graph6").innerHTML =
+          axesSvg(M, 192) + ribbonSvg(pts) + targetSvg(M, 3) + marker(M.X(10), M.Y(60), true, 1) + marker(M.X(90), M.Y(250), true, 1) +
+          head(M.X(95), M.Y(250), 0, 12 / 84, 42, 1);
+      }
+      document.getElementById("axes1").innerHTML = axesSvg(M1, 364, -30);
+      const $ = (id) => document.getElementById(id);
+      const show = (id, on) => { $(id).toggleAttribute("hidden", !on); };
+      const STEP = [
+        { l1: "1/2 단계 · 60 g까지 · 0:10까지", l2: "뜸 60 g, 30초 기다리기 (95°C, 중간-가는 분쇄)", goal: 60 },
+        { l1: "2/2 단계 · 250 g까지 · 1:30까지", l2: "0:40 나머지 물을 작은 원으로 천천히 250 g까지", goal: 250 },
+      ];
+      const V_STEP2 = 3 + 9.7, V_GOAL = 18.0, V_DONE = 19.0;
+
+      function renderAt(v) {
+        const tau = tauAt(v);
+        const running = tau !== null;
+        const k = running ? Math.floor(tau * 10 + 1e-6) : 0;
+        // --- 숫자 겹: 표본 그대로, 보간 없음 ---
+        const grams = running ? raw(k) / 10 : v < 1.16 ? 312.6 : 0;
+        $("weight").textContent = fmt1(grams);
+        const mm = Math.floor(k / 600), ss = (k % 600) / 10;
+        $("timer").textContent = `${String(mm).padStart(2, "0")}:${ss.toFixed(1).padStart(4, "0")}`;
+        $("flow").textContent = running ? shownFlow(k).toFixed(1) : "0.0";
+        // --- 상태별 배치(즉시 바뀜) ---
+        const waiting = v >= 1.3 && !running;
+        show("tabs", !running); show("rowIdle", !running); show("rowRun", running);
+        show("banner", waiting); show("cancelBtn", waiting); show("card", running);
+        $("startLbl").textContent = waiting ? "지금 시작" : "시작";
+        show("ff", v >= 18 && v < 19);
+        // 영점 탭: M3 리플 + 20 dp 진행 원(1.00–1.16)
+        const rp = v - 1.0, rr = 60 * easeTint(clamp01(rp / 0.25));
+        const ro = rp < 0 ? 0 : v < 1.16 ? 0.12 : 0.12 * (1 - clamp01((v - 1.16) / 0.15));
+        Object.assign($("zeroRipple").style, { width: `${2 * rr}px`, height: `${2 * rr}px`, marginLeft: `${-rr}px`, marginTop: `${-rr}px`, opacity: ro });
+        show("zeroSpin", v >= 1.0 && v < 1.16);
+        $("zeroSpin").style.transform = `rotate(${(v - 1.0) * 360 * 1.4}deg)`;
+        // 카드
+        const stepIdx = running && raw(k) >= 600 ? 1 : 0;
+        if (running) {
+          const st = STEP[stepIdx];
+          $("c1").textContent = st.l1; $("c2").textContent = st.l2;
+          $("c3").textContent = raw(k) >= 2500 ? "목표 도달 · 무게가 멈추면 끝납니다" : `남은 ${fmt1(Math.max(0, st.goal - raw(k) / 10))} g · 제때`;
+          const d = v - V_STEP2; // motion.tint: 들어감 250 ms, 나옴 350 ms
+          const tint = d < 0 ? 0 : d < 0.25 ? easeTint(d / 0.25) : 1 - easeTint(clamp01((d - 0.25) / 0.35));
+          $("card").style.background = mixHex("#f0e5df", "#f8decf", tint);
+        }
+        // --- 모양 겹: 리본 그래프 ---
+        const step2 = v >= V_STEP2;
+        const w2 = step2 ? lerp(2, 3, springAt(200, 1, v - V_STEP2)) : 2; // motion.calm
+        const d60 = step2 ? marker(M1.X(10), M1.Y(60), true, lerp(0.6, 1, springAt(400, 0.6, v - V_STEP2))) : marker(M1.X(10), M1.Y(60), false, 1);
+        const goal = v >= V_GOAL;
+        const d250 = goal ? marker(M1.X(90), M1.Y(250), true, lerp(0.6, 1, springAt(400, 0.6, v - V_GOAL))) : marker(M1.X(90), M1.Y(250), false, 1);
+        let body = "", hd = "", ring = "";
+        if (!running) {
+          // 1.16 s 출발점: 지름 10 dp 원이 motion.drop으로 나타남
+          if (v >= 1.16) hd = head(M1.X(0), M1.Y(0), 0, (10 / 84) * Math.max(0, springAt(400, 0.6, v - 1.16)), 42, 1);
+        } else {
+          const S = simAt(tau);
+          const headTau = ((S.hx - M1.x0) * 99) / (M1.x1 - M1.x0);
+          const pts = samplePts(M1, k, headTau);
+          pts.push([S.hx, S.hy, ribbonW(S.f)]); // 몸통은 머리 위치까지
+          body = ribbonSvg(pts);
+          const ang = (Math.atan2(S.vy, S.vx) * 180) / Math.PI - 90; // 끝이 진행 반대쪽
+          const D = 42 + (6 + 1.2 * S.f) / 0.14; // 꼬리 길이 6 + 1.2·f dp
+          const settle = springAt(300, 0.8, v - V_DONE); // motion.settle
+          hd = head(S.hx, S.hy, ang, lerp(0.14, 12 / 84, settle), D, settle);
+          const rt = v - (V_DONE + 0.25); // 원이 된 자리에서 물결 고리 0 → 28 dp
+          if (rt >= 0 && rt < 0.9) {
+            const e = easeRipple(rt / 0.9);
+            ring = `<circle cx="${S.hx}" cy="${S.hy}" r="${28 * e}" fill="none" stroke="#6f4a2e" stroke-width="2" opacity="${0.6 * (1 - e)}"/>`;
+          }
+        }
+        $("dyn1").innerHTML = body + targetSvg(M1, w2) + d60 + d250 + hd + ring;
+        // --- 화면 전환: fadeOut 150 ms → S6 fadeIn 200 ms ---
+        $("s1").style.opacity = v < 19.9 ? 1 : Math.max(0, 1 - (v - 19.9) / 0.15);
+        $("s6").style.opacity = v < 20.05 ? 0 : Math.min(1, (v - 20.05) / 0.2);
+      }
+
+      window.addEventListener("hf-seek", (e) => renderAt(e.detail.time));
+      const clock = { t: 0 };
+      const tl = gsap.timeline({ paused: true });
+      tl.to(clock, { t: 21, duration: 21, ease: "none", onUpdate: () => renderAt(clock.t) }, 0);
+      renderAt(0);
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

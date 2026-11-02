@@ -1,0 +1,831 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "RobotoApp";
+      src: url("assets/fonts/Roboto.ttf") format("truetype");
+      font-weight: 100 900;
+    }
+    @font-face {
+      font-family: "NotoSansKRApp";
+      src: url("assets/fonts/NotoSansKR-sub.ttf") format("truetype");
+      font-weight: 100 900;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      background: #fff8f5;
+      overflow: hidden;
+    }
+    /* 모든 좌표는 dp(1 dp = 2 px). zoom 2로 360×800 dp 화면을 720×1600 px에 그린다 */
+    #b-screen {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 360px;
+      height: 800px;
+      zoom: 2;
+      background: #fff8f5;
+      font-family: "RobotoApp", "NotoSansKRApp", sans-serif;
+      color: #211a16;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+    }
+    #b-screen svg.ic {
+      display: block;
+      fill: currentColor;
+      flex: none;
+    }
+    .b-abs {
+      position: absolute;
+    }
+    #b-title {
+      left: 48px;
+      top: 42px;
+      width: 264px;
+      height: 28px;
+      font-size: 22px;
+      line-height: 28px;
+      font-weight: 400;
+      text-align: center;
+      color: #211a16;
+    }
+    #b-tune {
+      left: 312px;
+      top: 44px;
+      color: #52443b;
+    }
+    #b-chip {
+      left: 16px;
+      top: 96px;
+      width: 96px;
+      height: 32px;
+      border-radius: 12px;
+      background: #b4efdc;
+      color: #002019;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-left: 10px;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 500;
+    }
+    #b-batt {
+      right: 16px;
+      top: 102px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      color: #52443b;
+      font-size: 14px;
+      line-height: 20px;
+    }
+    /* 무게: 숫자 상자 x 17–323 끝 정렬, 단위 g는 x 331 기준선 맞춤 */
+    #b-weight {
+      left: 17px;
+      top: 144px;
+      width: 330px;
+      height: 92px;
+      display: flex;
+      align-items: baseline;
+    }
+    #b-wnum {
+      width: 306px;
+      text-align: right;
+      font-size: 84px;
+      line-height: 92px;
+      font-weight: 500;
+      white-space: nowrap;
+      color: #211a16;
+    }
+    #b-wunit {
+      margin-left: 8px;
+      font-size: 22px;
+      line-height: 28px;
+      color: #52443b;
+    }
+    .b-mlabel {
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 500;
+      color: #52443b;
+    }
+    .b-mval {
+      font-size: 36px;
+      line-height: 48px;
+      font-weight: 500;
+      color: #211a16;
+      white-space: nowrap;
+    }
+    #b-mtime {
+      left: 16px;
+      top: 270px;
+      width: 156px;
+    }
+    #b-mflow {
+      left: 188px;
+      top: 270px;
+      width: 156px;
+    }
+    .b-fixbox {
+      display: inline-grid;
+    }
+    .b-fixbox > span {
+      grid-area: 1 / 1;
+      justify-self: end;
+    }
+    .b-sizer {
+      visibility: hidden;
+    }
+    .b-mark {
+      left: 292px;
+      width: 52px;
+      height: 16px;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 500;
+      color: #52443b;
+      white-space: nowrap;
+    }
+    #b-m60 {
+      top: 483.8px;
+    }
+    #b-m250 {
+      top: 369.1px;
+    }
+    .b-btn {
+      position: absolute;
+      height: 64px;
+      border-radius: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 16px;
+      line-height: 24px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .b-tonal {
+      background: #f8decf;
+      color: #261911;
+    }
+    .b-primary {
+      background: #6f4a2e;
+      color: #ffffff;
+    }
+    .b-outline {
+      border: 1px solid #847469;
+      color: #6f4a2e;
+      background: transparent;
+    }
+    .b-disabled {
+      background: rgba(33, 26, 22, 0.12);
+      color: rgba(33, 26, 22, 0.38);
+    }
+    #b-idle {
+      left: 0;
+      top: 0;
+      width: 360px;
+      height: 800px;
+    }
+    #b-zero {
+      left: 16px;
+      top: 644px;
+      width: 96px;
+    }
+    #b-zripple {
+      position: absolute;
+      left: 0;
+      top: -16px;
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: #261911;
+      opacity: 0;
+    }
+    #b-spin {
+      left: 8px;
+      top: 22px;
+      width: 20px;
+      height: 20px;
+    }
+    #b-spin-r {
+      width: 20px;
+      height: 20px;
+    }
+    #b-start,
+    #b-startnow {
+      left: 124px;
+      top: 644px;
+      width: 112px;
+    }
+    #b-cancel {
+      left: 248px;
+      top: 644px;
+      width: 96px;
+    }
+    #b-tabs {
+      left: 0;
+      top: 720px;
+      width: 360px;
+      height: 80px;
+      background: #f6ebe5;
+      display: flex;
+    }
+    .b-tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 12px;
+      gap: 4px;
+      color: #52443b;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 500;
+    }
+    .b-tab .ind {
+      width: 64px;
+      height: 32px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .b-tab.sel {
+      color: #211a16;
+    }
+    .b-tab.sel .ind {
+      background: #f8decf;
+      color: #261911;
+    }
+    #b-banner {
+      left: 16px;
+      top: 576px;
+      width: 328px;
+      height: 48px;
+      border-radius: 20px;
+      background: #f0e5df;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 16px;
+      font-size: 14px;
+      line-height: 20px;
+      color: #211a16;
+    }
+    #b-banner svg {
+      color: #52443b;
+    }
+    #b-card {
+      left: 16px;
+      top: 540px;
+      width: 328px;
+      height: 136px;
+      border-radius: 28px;
+      background: #f0e5df;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    #b-c1 {
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 500;
+      color: #52443b;
+    }
+    #b-c2 {
+      font-size: 16px;
+      line-height: 24px;
+      font-weight: 500;
+      color: #211a16;
+      height: 48px;
+      overflow: hidden;
+      word-break: keep-all;
+    }
+    #b-c3 {
+      font-size: 16px;
+      line-height: 24px;
+      font-weight: 500;
+      color: #211a16;
+    }
+    #b-run {
+      left: 0;
+      top: 0;
+      width: 360px;
+      height: 800px;
+    }
+    #b-rzero {
+      left: 16px;
+      top: 700px;
+      width: 96px;
+    }
+    #b-pause {
+      left: 124px;
+      top: 700px;
+      width: 112px;
+    }
+    #b-done {
+      left: 248px;
+      top: 700px;
+      width: 96px;
+    }
+    #b-ff {
+      left: 132px;
+      top: 2px;
+      width: 96px;
+      height: 20px;
+      border-radius: 10px;
+      background: #362f2b;
+      color: #fceee8;
+      font-size: 12px;
+      line-height: 20px;
+      font-weight: 500;
+      text-align: center;
+    }
+    #b-cv {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 360px;
+      height: 800px;
+      pointer-events: none;
+    }
+  </style>
+  <div id="root" data-composition-id="brew" data-width="720" data-height="1600">
+    <div id="b-fade" class="b-abs" style="left: 0; top: 0; width: 720px; height: 1600px">
+      <div id="b-screen">
+        <!-- 상단 바 -->
+        <div id="b-title" class="b-abs">V60 기본 ▾</div>
+        <svg id="b-tune" class="ic b-abs" width="24" height="24" viewBox="0 0 24 24">
+          <path
+            d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"
+          />
+        </svg>
+        <div id="b-chip" class="b-abs">
+          <svg class="ic" width="18" height="18" viewBox="0 0 24 24">
+            <path
+              d="M7 12l-2-2-2 2 2 2 2-2zm10.71-4.29L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88zM19 10l-2 2 2 2 2-2-2-2z"
+            />
+          </svg>
+          <span>연결됨</span>
+        </div>
+        <div id="b-batt" class="b-abs">
+          <svg class="ic" width="18" height="18" viewBox="0 0 24 24">
+            <path
+              d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"
+            />
+          </svg>
+          <span>82%</span>
+        </div>
+
+        <!-- 숫자 겹: 받은 표본을 그 프레임에 그대로 -->
+        <div id="b-weight" class="b-abs">
+          <span id="b-wnum">312.6</span><span id="b-wunit">g</span>
+        </div>
+        <div id="b-mtime" class="b-abs">
+          <div class="b-mlabel">시간</div>
+          <div class="b-mval" id="b-time">00:00.0</div>
+        </div>
+        <div id="b-mflow" class="b-abs">
+          <div class="b-mlabel">유량 g/s</div>
+          <div class="b-mval b-fixbox">
+            <span class="b-sizer">888.8</span><span id="b-flow">0.0</span>
+          </div>
+        </div>
+        <div id="b-m60" class="b-mark b-abs">60 g</div>
+        <div id="b-m250" class="b-mark b-abs">250 g</div>
+
+        <!-- Idle·WaitingForPour: 동작 줄 y 644–708 + 하단 탭 -->
+        <div id="b-idle" class="clip b-abs" data-start="0" data-duration="3" data-track-index="2">
+          <div id="b-zero" class="b-btn b-tonal">
+            <div id="b-zripple"></div>
+            <span>영점</span>
+            <div id="b-spin" class="clip b-abs" data-start="1" data-duration="0.16" data-track-index="3">
+              <svg id="b-spin-r" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="8.25" fill="none" stroke="#261911" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="36 60" />
+              </svg>
+            </div>
+          </div>
+          <div id="b-start" class="b-btn b-primary clip" data-start="0" data-duration="1.3" data-track-index="3">
+            <svg class="ic" width="24" height="24" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+            <span>시작</span>
+          </div>
+          <div id="b-startnow" class="b-btn b-primary clip" data-start="1.3" data-duration="1.7" data-track-index="4">
+            <span>지금 시작</span>
+          </div>
+          <div id="b-cancel" class="b-btn b-outline clip" data-start="1.3" data-duration="1.7" data-track-index="5">
+            <span>취소</span>
+          </div>
+          <div id="b-tabs" class="b-abs">
+            <div class="b-tab sel">
+              <div class="ind">
+                <svg class="ic" width="24" height="24" viewBox="0 0 24 24">
+                  <path
+                    d="M12 3c-1.27 0-2.4.8-2.82 2H3v2h1.95L2 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3L6.05 7h3.12c.33.85.98 1.5 1.83 1.83V20H2v2h20v-2h-9V8.82c.85-.32 1.5-.97 1.82-1.82h3.13L15 14c-.47 2 1 3 3.5 3s4.06-1 3.5-3l-2.95-7H21V5h-6.17C14.4 3.8 13.27 3 12 3zM5.5 10.97L6.75 14h-2.5l1.25-3.03zm13 0L19.75 14h-2.5l1.25-3.03z"
+                  />
+                </svg>
+              </div>
+              <span>추출</span>
+            </div>
+            <div class="b-tab">
+              <div class="ind">
+                <svg class="ic" width="24" height="24" viewBox="0 0 24 24">
+                  <path
+                    d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"
+                  />
+                </svg>
+              </div>
+              <span>레시피</span>
+            </div>
+            <div class="b-tab">
+              <div class="ind">
+                <svg class="ic" width="24" height="24" viewBox="0 0 24 24">
+                  <path
+                    d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.030 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"
+                  />
+                </svg>
+              </div>
+              <span>기록</span>
+            </div>
+          </div>
+        </div>
+        <div id="b-banner" class="clip b-abs" data-start="1.3" data-duration="1.7" data-track-index="6">
+          <svg class="ic" width="24" height="24" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+          </svg>
+          <span>물을 부으면 타이머가 시작됩니다</span>
+        </div>
+
+        <!-- Running: 단계 조약돌 카드 + 동작 줄 y 700–764 -->
+        <div id="b-run" class="clip b-abs" data-start="3" data-duration="17.05" data-track-index="7">
+          <div id="b-card" class="b-abs">
+            <div id="b-c1">1/2 단계 · 60 g까지 · 0:10까지</div>
+            <div id="b-c2">뜸 60 g, 30초 기다리기 (95°C, 중간-가는 분쇄)</div>
+            <div id="b-c3">남은 60.0 g · 제때</div>
+          </div>
+          <!-- 비활성 버튼(M3 38%/12%)은 WCAG 1.4.3 대비 예외라 감사에서 뺀다 -->
+          <div id="b-rzero" class="b-btn b-disabled" data-layout-ignore><span data-layout-ignore>영점</span></div>
+          <div id="b-pause" class="b-btn b-primary">
+            <svg class="ic" width="24" height="24" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+            <span>일시정지</span>
+          </div>
+          <div id="b-done" class="b-btn b-outline">
+            <svg class="ic" width="24" height="24" viewBox="0 0 24 24">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+            </svg>
+            <span>완료</span>
+          </div>
+        </div>
+
+        <!-- 모양 겹(서버·액체·물줄기·물방울·고리). 같은 정보를 반복하는 장식 -->
+        <canvas id="b-cv" width="720" height="1600" data-layout-ignore></canvas>
+
+        <div id="b-ff" class="clip b-abs" data-start="18" data-duration="1" data-track-index="8">5× 빨리 감기</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      const TAU = 2 * Math.PI;
+      // ---------- 합성 데이터(명세 6.4 그대로) ----------
+      function w(t) {
+        if (t < 0) return 0;
+        if (t <= 10) {
+          const x = t / 10;
+          return 61 * (x - (0.5 * Math.sin(TAU * x)) / TAU);
+        }
+        if (t <= 40) return 61;
+        if (t <= 90) {
+          const x = (t - 40) / 50;
+          return 61 + 189 * (x - (0.5 * Math.sin(TAU * x)) / TAU - (0.3 * Math.sin(8 * TAU * x)) / (8 * TAU));
+        }
+        return 250;
+      }
+      const raw = (k) => Math.round(w(k / 10) * 10);
+      const scaleFlow = (k) => Math.min(Math.max(raw(k) - raw(k - 10), 0), 999);
+      const shownFlow = (k) => {
+        let s = 0;
+        for (let j = k - 9; j <= k; j++) s += scaleFlow(j);
+        return s / 100;
+      };
+
+      // ---------- 시간 축 ----------
+      // S = 화면(기기) 시간. 앱 타이머 t = S − 3. 영상 v → S: ④에서 하드 컷과 5× 구간
+      function vToS(v) {
+        if (v < 14) return v;
+        if (v < 18) return 89 + (v - 14);
+        if (v < 19) return 93 + 5 * (v - 18);
+        return 98 + (v - 19);
+      }
+      const sampleK = (S) => Math.min(950, Math.floor((S - 3) * 10 + 1e-6));
+      const weightAt = (S) => (S < 1.16 ? 312.6 : S < 3 ? 0 : raw(sampleK(S)) / 10);
+      const flowAt = (S) => (S < 3 ? 0 : shownFlow(sampleK(S)));
+      // 붓는 중 = 최근 3개 표본 안에 무게가 바뀜(물줄기·물결 입력. 붓기를 멈추면 0)
+      function pouringAt(S) {
+        if (S < 3 || S >= 98) return false;
+        const k = sampleK(S);
+        for (let j = k; j > k - 3 && j >= 1; j--) if (raw(j) !== raw(j - 1)) return true;
+        return false;
+      }
+      const levelY = (h) => 528 - 150.88 * h;
+      const markY = (g) => 528 - 150.88 * (g / 250);
+
+      // ---------- 이징·스프링(명세 4.1·4.4) ----------
+      function bez(x1, y1, x2, y2) {
+        return (p) => {
+          if (p <= 0) return 0;
+          if (p >= 1) return 1;
+          let lo = 0, hi = 1, u = p;
+          for (let i = 0; i < 32; i++) {
+            u = (lo + hi) / 2;
+            const x = 3 * (1 - u) * (1 - u) * u * x1 + 3 * (1 - u) * u * u * x2 + u * u * u;
+            if (x < p) lo = u; else hi = u;
+          }
+          return 3 * (1 - u) * (1 - u) * u * y1 + 3 * (1 - u) * u * u * y2 + u * u * u;
+        };
+      }
+      const eFall = bez(0.3, 0, 1, 1);
+      const eRipple = bez(0.05, 0.7, 0.1, 1);
+      const eStd = bez(0.4, 0, 0.2, 1);
+      function springStep(s, target, k, zeta, dt) {
+        const c = 2 * zeta * Math.sqrt(k), h = dt / 4;
+        for (let i = 0; i < 4; i++) {
+          const a = -k * (s.x - target) - c * s.v;
+          s.v += a * h;
+          s.x += s.v * h;
+        }
+      }
+
+      // ---------- 모양 겹 시뮬레이션: S 0–101 s를 1/60 s로 미리 적분(결정적) ----------
+      const FPS = 60, N = 101 * FPS;
+      const lvl = { x: 0, v: 0 }, f = { x: 0, v: 0 }, tilt = { x: 0, v: 0 };
+      const tgt = { x: markY(60), v: 0 }, sc60 = { x: 1, v: 0 }, sc250 = { x: 1, v: 0 };
+      let phi = 0, psi = 0, prevW = null, prevVis = false, prevStep = 0;
+      const frames = new Array(N + 1);
+      const emits = [], detaches = [];
+      let fill60S = null, fill250S = null;
+      const SLOSH_V0 = 18.28; // °/s → motion.slosh 첫 봉우리 1.5°
+      for (let i = 0; i <= N; i++) {
+        const S = i / FPS, dt = 1 / FPS;
+        const wt = weightAt(S);
+        const idle = S < 1.3;
+        const hT = idle ? 0 : Math.min(Math.max(wt / 250, 0), 1.08);
+        if (prevW !== null && Math.abs(wt - prevW) > 50) { lvl.x = hT; lvl.v = 0; } // 큰 점프는 순간 이동
+        prevW = wt;
+        const pour = pouringAt(S);
+        const fIn = pour ? flowAt(S) : 0;
+        const step = S >= 3 && wt >= 60 ? 1 : 0;
+        if (step && !prevStep) { fill60S = S; sc60.x = 0.6; sc60.v = 0; }
+        prevStep = step;
+        if (S >= 3 && wt >= 250 && fill250S === null) { fill250S = S; sc250.x = 0.6; sc250.v = 0; }
+        const vis = pour && f.x >= 0.3;
+        const sw = Math.min(Math.max(1 + 0.5 * f.x, 1), 6);
+        if (prevVis && !vis && !pour) { detaches.push({ S, w: frames[i - 1].sw }); tilt.v += SLOSH_V0; }
+        prevVis = vis;
+        frames[i] = { lvl: lvl.x, f: f.x, phi, tilt: tilt.x, tgt: tgt.x, sc60: sc60.x, sc250: sc250.x, vis, sw, step };
+        if (vis) {
+          const p0 = psi;
+          psi += dt * (0.5 + 0.1 * f.x);
+          if (Math.floor(psi) > Math.floor(p0)) emits.push(S, S + 0.4);
+        }
+        springStep(lvl, hT, 1500, 1.0, dt); // motion.follow
+        springStep(f, fIn, 200, 1.0, dt); // motion.calm
+        springStep(tilt, 0, 60, 0.35, dt); // motion.slosh
+        springStep(tgt, markY(step ? 250 : 60), 300, 0.9, dt); // motion.target
+        springStep(sc60, 1, 400, 0.6, dt); // motion.drop
+        springStep(sc250, 1, 400, 0.6, dt);
+        if (S >= 1.3 && S < 98) phi += dt * TAU * (0.3 + 0.1 * f.x);
+      }
+
+      // ---------- 경로 ----------
+      const VX = (u) => 92 + 1.76 * u, VY = (v) => 364 + 1.64 * v;
+      function vesselPath(closed) {
+        const p = new Path2D();
+        if (closed) { p.moveTo(VX(11), VY(0)); p.lineTo(VX(89), VY(0)); }
+        else p.moveTo(VX(89), VY(0));
+        p.bezierCurveTo(VX(95), VY(18), VX(100), VY(42), VX(100), VY(61));
+        p.bezierCurveTo(VX(100), VY(83), VX(79), VY(100), VX(50), VY(100));
+        p.bezierCurveTo(VX(21), VY(100), VX(0), VY(83), VX(0), VY(61));
+        p.bezierCurveTo(VX(0), VY(42), VX(5), VY(18), VX(11), VY(0));
+        if (closed) p.closePath();
+        return p;
+      }
+      const VESSEL = vesselPath(true), WALL = vesselPath(false);
+      function drop(ctx, cx, cy, s) {
+        const k = 0.1 * s, X = (u) => cx + (u - 50) * k, Y = (v) => cy + (v - 70) * k;
+        ctx.beginPath();
+        ctx.moveTo(X(50), Y(0));
+        ctx.bezierCurveTo(X(50), Y(0), X(92), Y(58), X(92), Y(92));
+        ctx.bezierCurveTo(X(92), Y(118), X(73), Y(140), X(50), Y(140));
+        ctx.bezierCurveTo(X(27), Y(140), X(8), Y(118), X(8), Y(92));
+        ctx.bezierCurveTo(X(8), Y(58), X(50), Y(0), X(50), Y(0));
+        ctx.closePath();
+      }
+      const mix = (a, b, p) => {
+        const A = a.match(/\w\w/g).map((h) => parseInt(h, 16)), B = b.match(/\w\w/g).map((h) => parseInt(h, 16));
+        return "rgb(" + A.map((x, i) => Math.round(x + (B[i] - x) * p)).join(",") + ")";
+      };
+      const clamp01 = (x) => Math.min(Math.max(x, 0), 1);
+
+      // ---------- 그리기 ----------
+      const root = document.querySelector('[data-composition-id="brew"]');
+      const $ = (id) => root.querySelector("#" + id);
+      const cv = $("b-cv"), ctx = cv.getContext("2d");
+      const elW = $("b-wnum"), elT = $("b-time"), elF = $("b-flow");
+      const elC1 = $("b-c1"), elC2 = $("b-c2"), elC3 = $("b-c3"), elCard = $("b-card");
+      const STEPS = [
+        { l1: "1/2 단계 · 60 g까지 · 0:10까지", name: "뜸 60\u00a0g, 30초 기다리기 (95°C, 중간-가는 분쇄)", g: 60 },
+        { l1: "2/2 단계 · 250 g까지 · 1:30까지", name: "0:40 나머지 물을 작은 원으로 천천히 250\u00a0g까지", g: 250 },
+      ];
+      const fmt1 = (x) => (x < 0 ? "−" : "") + Math.abs(x).toFixed(1);
+      function fmtTime(S) {
+        if (S < 3) return "00:00.0";
+        const tt = Math.floor(Math.min(95, S - 3) * 10 + 1e-6) / 10;
+        const mm = Math.floor(tt / 60), ss = tt - mm * 60;
+        return String(mm).padStart(2, "0") + ":" + ss.toFixed(1).padStart(4, "0");
+      }
+
+      function render(v) {
+        const S = vToS(v);
+        const fr = frames[Math.min(N, Math.max(0, Math.round(S * FPS)))];
+        // 숫자 겹
+        const wt = weightAt(S);
+        elW.textContent = fmt1(wt);
+        elT.textContent = fmtTime(S);
+        elF.textContent = flowAt(S).toFixed(1);
+        const st = STEPS[fr.step];
+        elC1.textContent = st.l1;
+        elC2.textContent = st.name;
+        elC3.textContent = S >= 93 ? "목표 도달 · 무게가 멈추면 끝납니다" : "남은 " + fmt1(Math.max(0, st.g - wt)) + " g · 제때";
+        // 카드 색 숨(motion.tint 250 + 350 ms)
+        let tint = 0;
+        if (fill60S !== null && S >= fill60S) {
+          const a = S - fill60S;
+          tint = a < 0.25 ? eStd(a / 0.25) : 1 - eStd(clamp01((a - 0.25) / 0.35));
+        }
+        elCard.style.backgroundColor = mix("#F0E5DF", "#F8DECF", tint);
+
+        // 모양 겹
+        ctx.setTransform(2, 0, 0, 2, 0, 0);
+        ctx.clearRect(0, 0, 360, 800);
+        const h = fr.lvl, ys = levelY(h);
+        const Aw = Math.min(5, 0.6 * fr.f), tanT = Math.tan((fr.tilt * Math.PI) / 180);
+        const surfY = (x) => ys + Aw * Math.sin((TAU * x) / 72 + fr.phi) + (x - 180) * tanT;
+        const hasLiquid = h > 0.001;
+
+        ctx.save();
+        ctx.clip(VESSEL);
+        if (hasLiquid) {
+          ctx.beginPath();
+          ctx.moveTo(90, 540);
+          for (let x = 90; x <= 270; x += 2) ctx.lineTo(x, surfY(x));
+          ctx.lineTo(270, 540);
+          ctx.closePath();
+          ctx.fillStyle = "#FFDCC4";
+          ctx.fill();
+        }
+        // 현재 단계 목표 수위선(점선, 액체 위·안 모두)
+        let tAlpha = fill250S !== null && S >= fill250S ? 1 - clamp01((S - fill250S) / 0.2) : 1;
+        if (tAlpha > 0) {
+          ctx.globalAlpha = tAlpha;
+          ctx.setLineDash([6, 4]);
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = "#52443B";
+          ctx.beginPath();
+          ctx.moveTo(92, fr.tgt);
+          ctx.lineTo(268, fr.tgt);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.globalAlpha = 1;
+        }
+        if (hasLiquid) {
+          ctx.beginPath();
+          for (let x = 90; x <= 270; x += 2) x === 90 ? ctx.moveTo(x, surfY(x)) : ctx.lineTo(x, surfY(x));
+          ctx.lineWidth = 2.5;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.strokeStyle = "#6F4A2E";
+          ctx.stroke();
+        }
+        // 물줄기가 수면에 닿는 점의 작은 물결(반지름 3 dp에서 커지며 사라짐)
+        const hitY = hasLiquid ? surfY(180) : 528;
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < emits.length; i++) {
+          const a = S - emits[i];
+          if (a < 0 || a >= 0.6) continue;
+          const p = a / 0.6;
+          ctx.globalAlpha = 0.4 * (1 - p);
+          ctx.strokeStyle = "#6F4A2E";
+          ctx.beginPath();
+          ctx.arc(180, hitY, 3 + 7 * eRipple(p), 0, TAU);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        // 영점 확인 물방울(1.16 s 낙하 → 1.48 s 바닥 물결 고리)
+        ring(ctx, S - 1.48, 180, 524, 40, 0.25);
+        // 붓기 멈춤: 물줄기가 떨어져 물방울 → 수면에 고리(반지름 24 dp)
+        for (const d of detaches) {
+          const a = S - d.S;
+          if (a >= 0.32) ring(ctx, a - 0.32, 180, hitY, 24, 0.25);
+        }
+        ctx.restore();
+
+        // 벽(위가 열린 서버). 자동 완료 때 outline → primary 300 ms
+        const wallP = S >= 98 ? eStd(clamp01((S - 98) / 0.3)) : 0;
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = mix("#847469", "#6F4A2E", wallP);
+        ctx.stroke(WALL);
+
+        // 물줄기
+        ctx.strokeStyle = "#6F4A2E";
+        ctx.fillStyle = "#6F4A2E";
+        if (fr.vis) {
+          ctx.lineWidth = fr.sw;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(180, 352);
+          ctx.lineTo(180, hitY);
+          ctx.stroke();
+        }
+        for (const d of detaches) {
+          const a = S - d.S;
+          if (a < 0 || a >= 0.32) continue;
+          const yd = 352 + 7 + (hitY - 7 - 359) * eFall(a / 0.32);
+          ctx.lineWidth = d.w;
+          ctx.beginPath();
+          ctx.moveTo(180, yd);
+          ctx.lineTo(180, hitY);
+          ctx.stroke();
+          drop(ctx, 180, yd, 1);
+          ctx.fill();
+        }
+        if (S >= 1.16 && S < 1.48) {
+          drop(ctx, 180, 364 + (517 - 364) * eFall((S - 1.16) / 0.32), 1);
+          ctx.fill();
+        }
+
+        // 단계 물방울 표식(속 빈 = 아직, 채움 = 도달)
+        marker(ctx, markY(60), fill60S !== null && S >= fill60S, fr.sc60);
+        marker(ctx, markY(250), fill250S !== null && S >= fill250S, fr.sc250);
+
+        // 자동 완료 물결 고리(서버 중심, 반지름 0 → 140 dp)
+        if (S >= 98) {
+          const p = clamp01((S - 98) / 0.9);
+          if (p < 1) {
+            ctx.globalAlpha = 0.6 * (1 - p);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "#6F4A2E";
+            ctx.beginPath();
+            ctx.arc(180, 446, 140 * eRipple(p), 0, TAU);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+        }
+      }
+      // 납작한 물결 고리: 가로 반지름 0 → R, 세로 = 가로 × ratio, 알파 0.6 → 0, motion.ripple 900 ms
+      function ring(ctx, a, cx, cy, R, ratio) {
+        if (a < 0 || a >= 0.9) return;
+        const p = a / 0.9, rx = Math.max(0.01, R * eRipple(p));
+        ctx.globalAlpha = 0.6 * (1 - p);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#6F4A2E";
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, rx * ratio, 0, 0, TAU);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      function marker(ctx, y, filled, s) {
+        if (filled) {
+          drop(ctx, 281, y, s);
+          ctx.fillStyle = "#2F6A5A";
+          ctx.fill();
+        } else {
+          drop(ctx, 281, y, 1);
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = "#52443B";
+          ctx.stroke();
+        }
+      }
+
+      // ---------- 타임라인 ----------
+      const tl = gsap.timeline({ paused: true });
+      const proxy = { v: 0 };
+      tl.fromTo(proxy, { v: 0 }, { v: 20.05, duration: 20.05, ease: "none", onUpdate: () => render(proxy.v) }, 0);
+      // 영점 탭: M3 리플 + 진행 원(아이콘 자리)
+      tl.fromTo("#b-zripple", { scale: 0 }, { scale: 1, duration: 0.25, ease: "power2.out" }, 1.0);
+      tl.set("#b-zripple", { opacity: 0.12 }, 1.0);
+      tl.fromTo("#b-zripple", { opacity: 0.12 }, { opacity: 0, duration: 0.15, ease: "none", immediateRender: false }, 1.14);
+      tl.fromTo("#b-spin-r", { rotation: 0 }, { rotation: 200, duration: 0.16, ease: "none", transformOrigin: "50% 50%" }, 1.0);
+      // 19.90 s 화면 전환 fadeOut 150 ms
+      tl.fromTo("#b-fade", { opacity: 1 }, { opacity: 0, duration: 0.15, ease: "none" }, 19.9);
+      render(0);
+      window.__timelines["brew"] = tl;
+    })();
+  </script>
+</template>

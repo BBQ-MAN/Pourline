@@ -1,0 +1,161 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "RobotoApp";
+      src: url("assets/fonts/Roboto.ttf") format("truetype");
+      font-weight: 100 900;
+    }
+    @font-face {
+      font-family: "NotoSansKRApp";
+      src: url("assets/fonts/NotoSansKR-sub.ttf") format("truetype");
+      font-weight: 100 900;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      background: #fff8f5;
+      overflow: hidden;
+    }
+    #s-screen {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 360px;
+      height: 800px;
+      zoom: 2;
+      background: #fff8f5;
+      font-family: "RobotoApp", "NotoSansKRApp", sans-serif;
+      color: #211a16;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+    }
+    .s-abs {
+      position: absolute;
+    }
+    #s-title {
+      left: 48px;
+      top: 42px;
+      width: 264px;
+      height: 28px;
+      font-size: 22px;
+      line-height: 28px;
+      text-align: center;
+    }
+    .s-cell {
+      top: 104px;
+      width: 104px;
+      height: 72px;
+      border-radius: 28px;
+      background: #f0e5df;
+      padding: 12px 16px;
+    }
+    .s-cell .l {
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 500;
+      color: #52443b;
+    }
+    .s-cell .v {
+      margin-top: 4px;
+      font-size: 22px;
+      line-height: 28px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .s-mark {
+      left: 292px;
+      width: 52px;
+      height: 16px;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 500;
+      color: #52443b;
+    }
+    #s-field {
+      left: 16px;
+      top: 448px;
+      width: 328px;
+      height: 56px;
+      border: 1px solid #847469;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      font-size: 16px;
+      line-height: 24px;
+    }
+    #s-field .lab {
+      position: absolute;
+      left: 12px;
+      top: -9px;
+      padding: 0 4px;
+      background: #fff8f5;
+      font-size: 12px;
+      line-height: 16px;
+      color: #52443b;
+    }
+    #s-field .val {
+      flex: 1;
+    }
+    #s-field .suf {
+      color: #52443b;
+    }
+    .s-btn {
+      top: 712px;
+      width: 160px;
+      height: 56px;
+      border-radius: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      line-height: 24px;
+      font-weight: 500;
+    }
+  </style>
+  <div id="root" data-composition-id="summary" data-width="720" data-height="1600">
+    <div id="s-fade" class="s-abs" style="left: 0; top: 0; width: 720px; height: 1600px">
+      <div id="s-screen">
+        <div id="s-title" class="s-abs">추출 요약</div>
+        <div class="s-cell s-abs" style="left: 16px"><div class="l">최종 무게</div><div class="v">250.0 g</div></div>
+        <div class="s-cell s-abs" style="left: 128px"><div class="l">시간</div><div class="v">1:35</div></div>
+        <div class="s-cell s-abs" style="left: 240px"><div class="l">비율</div><div class="v">1:16.7</div></div>
+
+        <!-- 다 찬 서버 정지 그림(176 × 164 dp, x 92, y 230) -->
+        <svg class="s-abs" style="left: 92px; top: 230px; overflow: visible" width="176" height="164" viewBox="0 0 176 164">
+          <defs>
+            <clipPath id="s-vclip">
+              <path transform="scale(1.76 1.64)" d="M 11 0 L 89 0 C 95 18, 100 42, 100 61 C 100 83, 79 100, 50 100 C 21 100, 0 83, 0 61 C 0 42, 5 18, 11 0 Z" />
+            </clipPath>
+          </defs>
+          <g clip-path="url(#s-vclip)">
+            <rect x="-2" y="13.12" width="180" height="152" fill="#FFDCC4" />
+            <line x1="-2" y1="13.12" x2="178" y2="13.12" stroke="#6F4A2E" stroke-width="2.5" />
+          </g>
+          <path transform="scale(1.76 1.64)" d="M 89 0 C 95 18, 100 42, 100 61 C 100 83, 79 100, 50 100 C 21 100, 0 83, 0 61 C 0 42, 5 18, 11 0" fill="none" stroke="#847469" stroke-width="1.17" stroke-linecap="round" />
+        </svg>
+        <svg class="s-abs" style="left: 276px; top: 350.8px" width="10" height="14" viewBox="0 0 100 140">
+          <path d="M 50 0 C 50 0, 92 58, 92 92 C 92 118, 73 140, 50 140 C 27 140, 8 118, 8 92 C 8 58, 50 0, 50 0 Z" fill="#2F6A5A" />
+        </svg>
+        <svg class="s-abs" style="left: 276px; top: 236.1px" width="10" height="14" viewBox="0 0 100 140">
+          <path d="M 50 0 C 50 0, 92 58, 92 92 C 92 118, 73 140, 50 140 C 27 140, 8 118, 8 92 C 8 58, 50 0, 50 0 Z" fill="#2F6A5A" />
+        </svg>
+        <div class="s-mark s-abs" style="top: 349.8px">60 g</div>
+        <div class="s-mark s-abs" style="top: 235.1px">250 g</div>
+
+        <div id="s-field" class="s-abs">
+          <span class="lab">원두량</span><span class="val">15.0</span><span class="suf">g</span>
+        </div>
+        <div class="s-btn s-abs" style="left: 16px; color: #6f4a2e">버리기</div>
+        <div class="s-btn s-abs" style="left: 184px; background: #6f4a2e; color: #ffffff">저장</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    // S6 fadeIn 200 ms, 그 뒤 정지
+    tl.fromTo("#s-fade", { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "none" }, 0);
+    tl.set({}, {}, 0.95);
+    window.__timelines["summary"] = tl;
+  </script>
+</template>

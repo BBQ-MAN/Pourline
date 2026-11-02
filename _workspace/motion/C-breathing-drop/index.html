@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=720, height=1600" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      /* Spec: docs/spec/ui-organic-direction.md §6 공통 + §9 시안 C. Layout in dp; #app zoom 2 => 720x1600 px. */
+      @font-face { font-family: "Noto Sans KR"; font-weight: 400; src: url("assets/fonts/NotoSansKR-400.woff2") format("woff2"); }
+      @font-face { font-family: "Noto Sans KR"; font-weight: 500; src: url("assets/fonts/NotoSansKR-500.woff2") format("woff2"); }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 720px; height: 1600px; overflow: hidden; background: #fff8f5; }
+      #root { position: relative; width: 100%; height: 100%; background: #fff8f5; }
+      #app {
+        position: absolute; left: 0; top: 0; width: 360px; height: 800px; zoom: 2;
+        font-family: "Roboto", "Noto Sans KR", sans-serif; color: #211a16;
+        font-variant-numeric: tabular-nums; font-feature-settings: "tnum";
+      }
+      .layer { position: absolute; left: 0; top: 0; width: 360px; height: 800px; }
+      canvas.layer { pointer-events: none; }
+      .abs { position: absolute; }
+      .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; white-space: nowrap; }
+      svg.ic { display: block; fill: currentColor; }
+
+      #topbar-title { left: 48px; width: 264px; top: 42px; height: 28px; line-height: 28px; text-align: center; font-size: 22px; font-weight: 400; }
+      #topbar-tune { left: 312px; top: 44px; width: 24px; height: 24px; color: #52443b; }
+      #chip { left: 16px; top: 96px; width: 96px; height: 32px; border-radius: 12px; background: #b4efdc; color: #002019;
+        display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; font-weight: 500; }
+      #battery { right: 16px; top: 102px; height: 20px; display: flex; align-items: center; gap: 2px; color: #52443b; font-size: 14px; }
+
+      #weight { left: 39px; top: 210px; width: 282px; height: 80px; display: flex; align-items: baseline; }
+      #weight-num { display: inline-block; width: 262px; text-align: right; font-size: 72px; line-height: 80px; font-weight: 500; }
+      #weight-unit { margin-left: 8px; font-size: 22px; font-weight: 400; color: #52443b; }
+
+      .metric { top: 372px; height: 72px; }
+      .metric .lab { font-size: 12px; line-height: 16px; font-weight: 500; color: #52443b; }
+      .metric .val { font-size: 36px; line-height: 44px; font-weight: 500; }
+      #m-time { left: 16px; width: 156px; }
+      #m-flow { left: 188px; width: 156px; }
+      #flow-box { display: inline-grid; justify-items: end; }
+      #flow-box > span { grid-area: 1 / 1; }
+      #flow-ghost { visibility: hidden; }
+
+      #card { left: 16px; top: 456px; width: 328px; height: 136px; border-radius: 28px; background: #f0e5df; padding: 16px; }
+      #card-l1 { font-size: 14px; line-height: 20px; font-weight: 500; color: #52443b; }
+      #card-l2 { word-break: keep-all; font-size: 16px; line-height: 22px; font-weight: 500; margin-top: 4px; height: 44px; overflow: hidden; }
+      #card-l3 { font-size: 16px; line-height: 22px; font-weight: 500; margin-top: 4px; }
+
+      .axis { font-size: 12px; line-height: 14px; font-weight: 500; color: #52443b; }
+
+      .btn { height: 64px; border-radius: 32px; display: flex; align-items: center; justify-content: center; gap: 6px;
+        font-size: 16px; font-weight: 500; white-space: nowrap; }
+      .btn svg { width: 24px; height: 24px; }
+      .tonal { background: #f8decf; color: #261911; }
+      .primary { background: #6f4a2e; color: #ffffff; }
+      .outlined { border: 1px solid #847469; color: #6f4a2e; }
+      .disabled { background: rgba(33, 26, 22, 0.12); color: rgba(33, 26, 22, 0.38); }
+
+      #tabs { left: 0; top: 720px; width: 360px; height: 80px; background: #f6ebe5; display: flex; }
+      .tab { flex: 1; display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 4px; font-size: 12px; font-weight: 500; color: #52443b; }
+      .tab .ind { width: 64px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
+      .tab.sel .ind { background: #f8decf; color: #261911; }
+      .tab.sel { color: #211a16; }
+
+      #banner { left: 16px; top: 576px; width: 328px; height: 48px; border-radius: 20px; background: #f0e5df;
+        display: flex; align-items: center; gap: 12px; padding: 0 16px; font-size: 14px; color: #211a16; }
+      #banner svg { width: 24px; height: 24px; color: #52443b; flex: none; }
+
+      #ff { left: 132px; top: 2px; width: 96px; height: 20px; border-radius: 10px; background: #362f2b; color: #fceee8;
+        font-size: 12px; line-height: 20px; text-align: center; font-weight: 500; }
+
+      /* S6 */
+      #s6-title { left: 48px; width: 264px; top: 42px; height: 28px; line-height: 28px; text-align: center; font-size: 22px; }
+      #s6-back { left: 16px; top: 44px; width: 24px; height: 24px; color: #211a16; }
+      .stat { top: 104px; width: 104px; height: 72px; border-radius: 28px; background: #f0e5df; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; }
+      .stat .lab { font-size: 12px; line-height: 16px; font-weight: 500; color: #52443b; }
+      .stat .val { font-size: 22px; line-height: 28px; font-weight: 500; }
+      #s6-dose { left: 16px; top: 448px; width: 328px; height: 56px; border: 1px solid #847469; border-radius: 12px;
+        display: flex; align-items: center; padding: 0 16px; font-size: 16px; }
+      #s6-dose-label { left: 28px; top: 440px; padding: 0 4px; background: #fff8f5; font-size: 12px; line-height: 16px; color: #52443b; }
+      #s6-dose .sfx { margin-left: auto; color: #52443b; }
+      .s6btn { top: 712px; height: 56px; border-radius: 28px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 500; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="21" data-width="720" data-height="1600" data-fps="60">
+      <div id="app">
+        <!-- ===== S1 추출 ===== -->
+        <div id="s1" class="layer">
+          <canvas id="cv-back" class="layer" width="720" height="1600" data-layout-ignore></canvas>
+
+          <div id="topbar-title" class="abs">V60 기본 ▾</div>
+          <svg id="topbar-tune" class="abs ic" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+          <div id="chip" class="abs">
+            <svg class="ic" viewBox="0 0 24 24" width="18" height="18"><path d="M17.71 7.71L12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM13 5.83l1.88 1.88L13 9.59V5.83zm1.88 10.46L13 18.17v-3.76l1.88 1.88z"/></svg>
+            <span>연결됨</span>
+          </div>
+          <div id="battery" class="abs">
+            <svg class="ic" viewBox="0 0 24 24" width="20" height="20"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+            <span class="num">82%</span>
+          </div>
+
+          <div id="weight" class="abs" data-layout-allow-overlap>
+            <span id="weight-num" class="num">312.6</span><span id="weight-unit">g</span>
+          </div>
+
+          <div id="m-time" class="abs metric">
+            <div class="lab">시간</div>
+            <div id="time-val" class="val num">00:00.0</div>
+          </div>
+          <div id="m-flow" class="abs metric">
+            <div class="lab">유량 g/s</div>
+            <div class="val num"><span id="flow-box"><span id="flow-ghost">888.8</span><span id="flow-val">0.0</span></span></div>
+          </div>
+
+          <div id="card" class="abs">
+            <div id="card-l1">1/2 단계 · 60 g까지 · 0:10까지</div>
+            <div id="card-l2">뜸 60 g, 30초 기다리기 (95°C, 중간-가는 분쇄)</div>
+            <div id="card-l3" class="num">남은 60.0 g · 제때</div>
+          </div>
+
+          <div id="graph-labels" class="layer">
+            <div class="abs axis" style="left:16px;top:600px;width:28px;text-align:right">g</div>
+            <div class="abs axis num" style="left:16px;top:614px;width:28px;text-align:right">250</div>
+            <div class="abs axis num" style="left:16px;top:657px;width:28px;text-align:right">0</div>
+            <div class="abs axis num" style="left:38px;top:666px;width:20px;text-align:center">0</div>
+            <div class="abs axis num" style="left:298px;top:666px;width:24px;text-align:center">90</div>
+            <div class="abs axis" style="left:326px;top:666px;width:18px;text-align:right">s</div>
+          </div>
+
+          <div id="banner" class="abs">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+            <span>물을 부으면 타이머가 시작됩니다</span>
+          </div>
+
+          <!-- 동작 줄: Idle / WaitingForPour (y 644–708) -->
+          <div id="row-idle" class="layer">
+            <div id="btn-zero" class="abs btn tonal" style="left:16px;top:644px;width:96px">
+              <svg id="zero-icon" class="ic" viewBox="0 0 24 24"><path d="M12 4a6 6 0 0 0-6 6v4a6 6 0 0 0 12 0v-4a6 6 0 0 0-6-6zm4 10a4 4 0 0 1-8 0v-4a4 4 0 0 1 8 0v4z"/></svg>
+              <span id="zero-spin-slot" style="display:none;width:24px;height:24px"></span>
+              <span>영점</span>
+            </div>
+            <div class="abs btn primary" style="left:124px;top:644px;width:112px">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              <span id="start-label">시작</span>
+            </div>
+            <div id="btn-cancel" class="abs btn outlined" style="left:248px;top:644px;width:96px">취소</div>
+          </div>
+
+          <!-- 동작 줄: Running (y 700–764) -->
+          <div id="row-run" class="layer">
+            <div class="abs btn disabled" style="left:16px;top:700px;width:96px" aria-disabled="true" data-layout-ignore>
+              <svg class="ic" viewBox="0 0 24 24"><path d="M12 4a6 6 0 0 0-6 6v4a6 6 0 0 0 12 0v-4a6 6 0 0 0-6-6zm4 10a4 4 0 0 1-8 0v-4a4 4 0 0 1 8 0v4z"/></svg>
+              <span>영점</span>
+            </div>
+            <div class="abs btn primary" style="left:124px;top:700px;width:112px">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              <span>일시정지</span>
+            </div>
+            <div class="abs btn outlined" style="left:248px;top:700px;width:96px">완료</div>
+          </div>
+
+          <div id="tabs" class="abs">
+            <div class="tab sel"><div class="ind"><svg class="ic" viewBox="0 0 24 24" width="24" height="24"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/></svg></div><span>추출</span></div>
+            <div class="tab"><div class="ind"><svg class="ic" viewBox="0 0 24 24" width="24" height="24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg></div><span>레시피</span></div>
+            <div class="tab"><div class="ind"><svg class="ic" viewBox="0 0 24 24" width="24" height="24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg></div><span>기록</span></div>
+          </div>
+
+          <canvas id="cv-front" class="layer" width="720" height="1600" data-layout-ignore></canvas>
+        </div>
+
+        <!-- ===== S6 추출 요약 ===== -->
+        <div id="s6" class="layer" style="opacity:0">
+          <canvas id="cv-s6" class="layer" width="720" height="1600" data-layout-ignore></canvas>
+          <svg id="s6-back" class="abs ic" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          <div id="s6-title" class="abs">추출 요약</div>
+          <div class="abs stat" style="left:16px"><div class="lab">최종 무게</div><div class="val num">250.0 g</div></div>
+          <div class="abs stat" style="left:128px"><div class="lab">시간</div><div class="val num">1:35</div></div>
+          <div class="abs stat" style="left:240px"><div class="lab">비율</div><div class="val num">1:16.7</div></div>
+          <div id="s6-dose" class="abs"><span class="num">15.0</span><span class="sfx">g</span></div>
+          <div id="s6-dose-label" class="abs">원두량</div>
+          <div class="abs s6btn" style="left:16px;width:156px;color:#6f4a2e">버리기</div>
+          <div class="abs s6btn" style="left:188px;width:156px;background:#6f4a2e;color:#ffffff">저장</div>
+        </div>
+
+        <div id="ff" class="abs">5× 빨리 감기</div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        // ---------- 합성 데이터 (§6.4, 그대로) ----------
+        const TAU = 2 * Math.PI;
+        function w(t) {
+          if (t < 0) return 0;
+          if (t <= 10) { const x = t / 10; return 61 * (x - 0.5 * Math.sin(TAU * x) / TAU); }
+          if (t <= 40) return 61;
+          if (t <= 90) { const x = (t - 40) / 50;
+            return 61 + 189 * (x - 0.5 * Math.sin(TAU * x) / TAU - 0.3 * Math.sin(8 * TAU * x) / (8 * TAU)); }
+          return 250;
+        }
+        const KMAX = 950;
+        const RAW = [], SF = [], SHOWN = [];
+        const rawAt = (k) => (k < 0 ? 0 : RAW[k]);
+        for (let k = 0; k <= KMAX; k++) RAW[k] = Math.round(w(k / 10) * 10);
+        for (let k = 0; k <= KMAX; k++) SF[k] = Math.min(Math.max(rawAt(k) - rawAt(k - 10), 0), 999);
+        for (let k = 0; k <= KMAX; k++) { let s = 0; for (let j = k - 9; j <= k; j++) s += j < 0 ? 0 : SF[j]; SHOWN[k] = s / 100; }
+        console.assert(RAW[70] === 473 && SHOWN[60] === 9 && RAW[900] === 2500, "data table mismatch");
+
+        // ---------- 모션 토큰 (§4.1) ----------
+        const H = 1 / 240; // springStep: dt 1/60 split in 4
+        function step(s, target, k, zeta) { const a = -k * (s.x - target) - 2 * zeta * Math.sqrt(k) * s.v; s.v += a * H; s.x += s.v * H; }
+        function stepResp(t, k, zeta) { // closed-form step response 0 -> 1 (zeta < 1)
+          if (t <= 0) return 0; const wn = Math.sqrt(k), wd = wn * Math.sqrt(1 - zeta * zeta);
+          return 1 - Math.exp(-zeta * wn * t) * (Math.cos(wd * t) + (zeta * wn / wd) * Math.sin(wd * t));
+        }
+        function bez(x1, y1, x2, y2) {
+          const cx = (t, a, b) => 3 * a * t * (1 - t) * (1 - t) + 3 * b * t * t * (1 - t) + t * t * t;
+          return (x) => { if (x <= 0) return 0; if (x >= 1) return 1; let lo = 0, hi = 1, t = x;
+            for (let i = 0; i < 40; i++) { t = (lo + hi) / 2; if (cx(t, x1, x2) < x) lo = t; else hi = t; } return cx(t, y1, y2); };
+        }
+        const easeFall = bez(0.3, 0, 1, 1), easeRipple = bez(0.05, 0.7, 0.1, 1), easeStd = bez(0.4, 0, 0.2, 1);
+        const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+        // ---------- 모양 겹 시뮬레이션 (앱 시간, 결정적) ----------
+        // seg1: t 0..11 (scenes 2-3), seg2: pre-roll 80..86 then 86..95 (scene 4)
+        function simulate(t0, t1, slosh) {
+          const k0 = Math.floor(t0 * 10 + 1e-6);
+          const lv = { x: rawAt(k0) / 10, v: 0 }, f = { x: SHOWN[k0], v: 0 }, tilt = { x: 0, v: 0 };
+          const hx = { x: k0 / 10, v: 0 }, hy = { x: rawAt(k0) / 10, v: 0 };
+          let phiW = 0, phiB = 0, psi = 0, prevK = k0, sloshDone = false;
+          const out = { t0, n: 0, lv: [], f: [], phiW: [], phiB: [], tilt: [], hx: [], hy: [], rings: [] };
+          const n = Math.round((t1 - t0) / H);
+          for (let i = 0; i <= n; i++) {
+            const t = t0 + i * H, k = Math.min(KMAX, Math.floor(t * 10 + 1e-6));
+            const sample = rawAt(k) / 10;
+            if (k !== prevK && Math.abs(sample - rawAt(prevK) / 10) > 50) { lv.x = sample; lv.v = 0; } // §4.2-5 snapTo
+            prevK = k;
+            if (i > 0) {
+              step(lv, sample, 1500, 1.0); step(f, SHOWN[k], 200, 1.0);
+              step(hx, k / 10, 1500, 1.0); step(hy, sample, 1500, 1.0);
+              if (slosh && !sloshDone && t >= slosh) { tilt.v = 18.25; sloshDone = true; } // peak ~1.5 deg, left side up first
+              step(tilt, 0, 60, 0.35);
+              const fc = Math.max(0, f.x);
+              phiW += TAU * (0.3 + 0.1 * fc) * H;
+              phiB += TAU * 0.25 * (fc / 4) * H;
+              if (fc >= 0.3) { const p0 = psi; psi += (0.5 + 0.1 * fc) * H; if (Math.floor(psi) > Math.floor(p0)) out.rings.push(t, t + 0.4); }
+            }
+            out.lv.push(lv.x); out.f.push(Math.max(0, f.x)); out.phiW.push(phiW); out.phiB.push(phiB);
+            out.tilt.push(tilt.x); out.hx.push(hx.x); out.hy.push(hy.x);
+          }
+          out.n = n; return out;
+        }
+        const SEG1 = simulate(0, 11, 10.0);
+        const SEG2 = simulate(80, 95, 0);
+        function stateAt(seg, t) {
+          const i = clamp(Math.round((t - seg.t0) / H), 0, seg.n);
+          return { lv: seg.lv[i], f: seg.f[i], phiW: seg.phiW[i], phiB: seg.phiB[i], tilt: seg.tilt[i], hx: seg.hx[i], hy: seg.hy[i], rings: seg.rings, t };
+        }
+
+        // ---------- 영상 시간 -> 앱 상태 (§6.3) ----------
+        function appTime(v) {
+          if (v < 3) return null;
+          if (v < 14) return v - 3;
+          if (v < 18) return 86 + (v - 14);
+          if (v < 19) return 90 + 5 * (v - 18);
+          return 95;
+        }
+
+        // ---------- 그리기 도우미 ----------
+        const DROP = new Path2D("M 50 0 C 50 0, 92 58, 92 92 C 92 118, 73 140, 50 140 C 27 140, 8 118, 8 92 C 8 58, 50 0, 50 0 Z");
+        function drawDrop(ctx, x, y, wdp, hdp, rot, filled, color, scale) {
+          ctx.save(); ctx.translate(x, y); ctx.rotate(rot || 0); ctx.scale((wdp / 100) * (scale || 1), (hdp / 140) * (scale || 1));
+          ctx.translate(-50, -92);
+          if (filled) { ctx.fillStyle = color; ctx.fill(DROP); }
+          else { ctx.lineWidth = 1.5 * 100 / wdp; ctx.strokeStyle = color; ctx.stroke(DROP); }
+          ctx.restore();
+        }
+        const BX = 180, BY = 250, HW = 164, HH = 110; // blob x 16–344, y 140–360
+        function blobPoints(r, A, phi, hw, hh) {
+          const pts = [];
+          for (let i = 0; i < 72; i++) {
+            const th = (TAU * i) / 72, c = Math.cos(th), s = Math.sin(th);
+            const tx = Math.abs(c) > 1e-9 ? hw / Math.abs(c) : Infinity, ty = Math.abs(s) > 1e-9 ? hh / Math.abs(s) : Infinity;
+            let t = Math.min(tx, ty), px = t * c, py = t * s, nx, ny;
+            if (Math.abs(px) > hw - r && Math.abs(py) > hh - r) {
+              const Cx = Math.sign(c) * (hw - r), Cy = Math.sign(s) * (hh - r), dc = c * Cx + s * Cy;
+              t = dc + Math.sqrt(dc * dc - (Cx * Cx + Cy * Cy) + r * r); px = t * c; py = t * s; nx = (px - Cx) / r; ny = (py - Cy) / r;
+            } else if (tx < ty) { nx = Math.sign(c); ny = 0; } else { nx = 0; ny = Math.sign(s); }
+            const d = A * (Math.sin(3 * th + phi) + 0.5 * Math.sin(5 * th - 1.3 * phi)); // §2.2
+            pts.push([px + nx * d, py + ny * d]);
+          }
+          return pts;
+        }
+        function blobPath(ctx, cx, cy, r, A, phi, sc, hw, hh) {
+          hw = hw || HW; hh = hh || HH; r = Math.min(r, hh);
+          ctx.beginPath();
+          if (A < 0.01) { ctx.roundRect(cx - hw * sc, cy - hh * sc, 2 * hw * sc, 2 * hh * sc, r * sc); return; }
+          const p = blobPoints(r, A, phi, hw, hh).map(([x, y]) => [cx + x * sc, cy + y * sc]), n = p.length;
+          ctx.moveTo(p[0][0], p[0][1]);
+          for (let i = 0; i < n; i++) { // Catmull-Rom -> cubic Bezier, closed
+            const P0 = p[(i - 1 + n) % n], P1 = p[i], P2 = p[(i + 1) % n], P3 = p[(i + 2) % n];
+            ctx.bezierCurveTo(P1[0] + (P2[0] - P0[0]) / 6, P1[1] + (P2[1] - P0[1]) / 6, P2[0] - (P3[0] - P1[0]) / 6, P2[1] - (P3[1] - P1[1]) / 6, P2[0], P2[1]);
+          }
+          ctx.closePath();
+        }
+        function lerpColor(a, b, u) {
+          const pa = [1, 3, 5].map((i) => parseInt(a.substr(i, 2), 16)), pb = [1, 3, 5].map((i) => parseInt(b.substr(i, 2), 16));
+          return "rgb(" + pa.map((c, i) => Math.round(c + (pb[i] - c) * u)).join(",") + ")";
+        }
+
+        // ---------- 숫자 겹 서식 ----------
+        const MINUS = "−";
+        const fmtW = (raw) => (raw < 0 ? MINUS : "") + (Math.abs(raw) / 10).toFixed(1);
+        const fmtT = (k) => { const ds = Math.max(0, k), m = Math.floor(ds / 600), s = Math.floor((ds % 600) / 10), d = ds % 10;
+          return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0") + "." + d; };
+
+        // ---------- DOM ----------
+        const $ = (id) => document.getElementById(id);
+        const el = { wNum: $("weight-num"), time: $("time-val"), flow: $("flow-val"), card: $("card"), l1: $("card-l1"), l2: $("card-l2"), l3: $("card-l3"),
+          banner: $("banner"), rowIdle: $("row-idle"), rowRun: $("row-run"), tabs: $("tabs"), cancel: $("btn-cancel"), startLabel: $("start-label"),
+          zeroIcon: $("zero-icon"), spinSlot: $("zero-spin-slot"), graphLabels: $("graph-labels"), ff: $("ff"), s1: $("s1"), s6: $("s6") };
+        function show(e, on) { e.style.display = on ? "" : "none"; }
+        const back = $("cv-back").getContext("2d"), front = $("cv-front").getContext("2d"), s6c = $("cv-s6").getContext("2d");
+        const STEP1 = "뜸 60 g, 30초 기다리기 (95°C, 중간-가는 분쇄)", STEP2 = "0:40 나머지 물을 작은 원으로 천천히 250 g까지";
+
+        // graph mapping (mini ribbon, x 48–336, y 616–664 plot; range 0–99 s, 0–275 g)
+        const GX = (s) => 48 + (288 * s) / 99, GY = (g) => 664 - (48 * g) / 275;
+        const ribbonW = (f) => Math.min(10, 2.5 + 0.9 * f);
+
+        function surfaceY(lv) { const h = clamp(lv / 250, 0, 1.08); return { h, y: 360 - 200 * h }; }
+
+        function drawLiquid(ctx, st, clipFn, dimmed) {
+          const { h, y: sy } = surfaceY(st.lv);
+          if (h <= 0.0005) return;
+          const Aw = Math.min(5, 0.6 * st.f), tanT = Math.tan((st.tilt * Math.PI) / 180);
+          const Y = (x) => sy + Aw * Math.sin((TAU * x) / 72 + st.phiW) + tanT * (x - 180);
+          ctx.save(); clipFn(); ctx.clip();
+          ctx.beginPath(); ctx.moveTo(0, Y(0)); for (let x = 2; x <= 360; x += 2) ctx.lineTo(x, Y(x));
+          ctx.lineTo(360, 400); ctx.lineTo(0, 400); ctx.closePath(); ctx.fillStyle = "#FFDCC4"; ctx.fill();
+          ctx.beginPath(); ctx.moveTo(0, Y(0)); for (let x = 2; x <= 360; x += 2) ctx.lineTo(x, Y(x));
+          ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.strokeStyle = "#6F4A2E"; ctx.stroke();
+          // flow-proportional rings at surface centre (§7.2 rule): r 3 -> 12 dp, alpha 0.4 -> 0
+          if (st.rings) for (let i = 0; i < st.rings.length; i++) {
+            const age = st.t - st.rings[i]; if (age < 0 || age > 0.8) continue;
+            const u = age / 0.8, r = 3 + 9 * easeRipple(u);
+            ctx.beginPath(); ctx.ellipse(180, Y(180), r, r * 0.35, 0, 0, TAU);
+            ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(111,74,46," + (0.4 * (1 - u)).toFixed(3) + ")"; ctx.stroke();
+          }
+          ctx.restore();
+        }
+
+        function drawGraph(ctx, st, t) {
+          ctx.save();
+          ctx.strokeStyle = "#D7C3B7"; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(48, GY(0)); ctx.lineTo(336, GY(0)); ctx.moveTo(48, GY(250)); ctx.lineTo(336, GY(250)); ctx.stroke();
+          // ribbon: per-sample thickness (§4.3), body to head
+          const kNow = Math.min(KMAX, Math.floor(t * 10 + 1e-6));
+          ctx.strokeStyle = "#6F4A2E"; ctx.lineCap = "round";
+          for (let k = 1; k <= kNow; k++) {
+            ctx.beginPath(); ctx.lineWidth = ribbonW(SHOWN[k]);
+            ctx.moveTo(GX((k - 1) / 10), GY(RAW[k - 1] / 10)); ctx.lineTo(GX(k / 10), GY(RAW[k] / 10)); ctx.stroke();
+          }
+          const hx = GX(st.hx), hy = GY(st.hy);
+          ctx.beginPath(); ctx.lineWidth = ribbonW(SHOWN[kNow]); ctx.moveTo(GX(kNow / 10), GY(RAW[kNow] / 10)); ctx.lineTo(hx, hy); ctx.stroke();
+          // target line on top, 1 dp surface border each side
+          const tgt = [[0, 0], [10, 60], [90, 250]];
+          ctx.beginPath(); tgt.forEach(([s, g], i) => (i ? ctx.lineTo(GX(s), GY(g)) : ctx.moveTo(GX(s), GY(g))));
+          ctx.lineWidth = 4; ctx.strokeStyle = "#FFF8F5"; ctx.setLineDash([8, 6]); ctx.lineCap = "butt"; ctx.stroke();
+          ctx.lineWidth = 2; ctx.strokeStyle = "#847469"; ctx.stroke(); ctx.setLineDash([]);
+          // vertex drops (drop.s): filled tertiary when reached, motion.drop scale 0.6 -> 1
+          [[10, 60, 9.7], [90, 250, 90.0]].forEach(([s, g, tr]) => {
+            if (t >= tr) drawDrop(ctx, GX(s), GY(g) - 4, 10, 14, 0, true, "#2F6A5A", 0.6 + 0.4 * stepResp(t - tr, 400, 0.6));
+            else drawDrop(ctx, GX(s), GY(g) - 4, 10, 14, 0, false, "#52443B");
+          });
+          // head, tip = tail, pointing against motion
+          const k0 = Math.max(0, kNow - 3), dx = GX(st.hx) - GX(k0 / 10), dy = GY(st.hy) - GY(RAW[k0] / 10);
+          const ang = Math.hypot(dx, dy) > 0.05 ? Math.atan2(dy, dx) : 0;
+          drawDrop(ctx, hx, hy, 10, 14, ang + Math.PI / 2 + Math.PI, true, "#6F4A2E"); // drop.s: drop.m reads as a blot in an 80 dp graph
+          ctx.restore();
+        }
+
+        // ---------- 한 프레임 (영상 시간 v) ----------
+        function renderAt(v) {
+          const t = appTime(v);
+          const pre = t === null, idle = v < 1.3, waiting = pre && !idle, done = v >= 19;
+          const k = pre ? -1 : Math.min(KMAX, Math.floor(t * 10 + 1e-6));
+
+          // --- 숫자 겹: 즉시 ---
+          el.wNum.textContent = pre ? (v < 1.16 ? "312.6" : "0.0") : fmtW(RAW[k]);
+          el.time.textContent = pre ? "00:00.0" : fmtT(k);
+          el.flow.textContent = pre ? "0.0" : SHOWN[k].toFixed(1);
+          show(el.tabs, pre); show(el.rowIdle, pre); show(el.rowRun, !pre);
+          show(el.banner, waiting); show(el.cancel, waiting); el.startLabel.textContent = waiting ? "지금 시작" : "시작";
+          show(el.card, !pre); show(el.graphLabels, !pre);
+          const spinning = v >= 1.0 && v < 1.16; show(el.zeroIcon, !spinning); show(el.spinSlot, spinning);
+          if (!pre) {
+            const nb = (x) => x.replace(/ g/g, "\u00a0g"); // keep "250 g" on one line
+            const step2 = k >= 97, reached = k >= 900, wNow = RAW[k] / 10;
+            el.l1.textContent = nb(step2 ? "2/2 단계 · 250 g까지 · 1:30까지" : "1/2 단계 · 60 g까지 · 0:10까지");
+            el.l2.textContent = nb(step2 ? STEP2 : STEP1);
+            el.l3.textContent = nb(reached ? "목표 도달 · 무게가 멈추면 끝납니다" : "남은 " + Math.max(0, (step2 ? 250 : 60) - wNow).toFixed(1) + " g · 제때");
+          }
+          show(el.ff, v >= 18 && v < 19);
+
+          // --- 카드 색 숨 (motion.tint): 물방울이 카드에 닿는 12.7 + 0.32 s ---
+          const tintT = v - 13.02; let tint = 0;
+          if (tintT >= 0 && tintT < 0.25) tint = easeStd(tintT / 0.25); else if (tintT >= 0.25 && tintT < 0.6) tint = 1 - easeStd((tintT - 0.25) / 0.35);
+          el.card.style.backgroundColor = v < 14 && tint > 0 ? lerpColor("#F0E5DF", "#F8DECF", tint) : "#F0E5DF";
+
+          // --- 화면 전환 19.90 fadeOut 150 → S6 fadeIn 200 ---
+          el.s1.style.opacity = v < 19.9 ? 1 : Math.max(0, 1 - (v - 19.9) / 0.15);
+          el.s6.style.opacity = v < 20.05 ? 0 : Math.min(1, (v - 20.05) / 0.2);
+          el.s1.style.display = v >= 20.05 ? "none" : ""; el.s6.style.display = v >= 20.05 ? "" : "none";
+
+          // --- 모양 겹 ---
+          let st;
+          if (pre) st = { lv: 0, f: 0, phiW: 0, phiB: 0, tilt: 0, hx: 0, hy: 0, rings: null, t: 0 };
+          else st = t <= 11 ? stateAt(SEG1, t) : stateAt(SEG2, t);
+          const Ab = Math.min(4, 0.45 * st.f);
+          // blob breath at 1.16 s: scale 1 -> 1.015 -> 1 via motion.drop impulse (v0 0.601 => peak 1.015)
+          let sc = 1;
+          if (v >= 1.16 && v < 2.2) { const u = v - 1.16, wn = 20, wd = 16; sc = 1 + (0.601 / wd) * Math.exp(-0.6 * wn * u) * Math.sin(wd * u); }
+          // completion: corner 96 -> 110 (motion.settle 0.8/300)
+          const r = done ? Math.min(110, 96 + 14 * stepResp(v - 19, 300, 0.8)) : 96;
+
+          back.setTransform(2, 0, 0, 2, 0, 0); back.clearRect(0, 0, 360, 800);
+          const clipFn = () => blobPath(back, BX, BY, r, Ab, st.phiB, sc);
+          if (done) { // ripple ring outward to 24 dp, alpha 0.6 -> 0
+            const u = clamp((v - 19) / 0.9, 0, 1), d = 24 * easeRipple(u);
+            if (u < 1) { back.beginPath(); back.roundRect(BX - HW - d, BY - HH - d, 2 * (HW + d), 2 * (HH + d), Math.min(r + d, HH + d));
+              back.lineWidth = 2; back.strokeStyle = "rgba(111,74,46," + (0.6 * (1 - u)).toFixed(3) + ")"; back.stroke(); }
+          }
+          clipFn(); back.fillStyle = "#F0E5DF"; back.fill();
+          drawLiquid(back, st, clipFn);
+          if (!pre) drawGraph(back, st, t);
+
+          // front: zero ripple + spinner, falling drop + card ring
+          front.setTransform(2, 0, 0, 2, 0, 0); front.clearRect(0, 0, 360, 800);
+          if (v >= 1.0 && v < 1.6) { // M3 ripple on 영점 (x 16–112, y 644–708)
+            const u = v - 1.0, rr = 70 * easeStd(Math.min(1, u / 0.3)), a = u < 0.25 ? 0.12 : 0.12 * Math.max(0, 1 - (u - 0.25) / 0.35);
+            front.save(); front.beginPath(); front.roundRect(16, 644, 96, 64, 32); front.clip();
+            front.beginPath(); front.arc(64, 676, rr, 0, TAU); front.fillStyle = "rgba(38,25,17," + a.toFixed(3) + ")"; front.fill(); front.restore();
+          }
+          if (spinning) { // 20 dp CircularProgressIndicator in icon slot
+            // icon slot centre from fixed layout: button x 16–112, content (24 icon + 6 gap + ~32 label) centred
+            const cx = 45, cy = 676, a0 = (v - 1.0) * TAU * 1.4;
+            front.beginPath(); front.arc(cx, cy, 8.5, a0, a0 + Math.PI * 1.4); front.lineWidth = 3; front.lineCap = "round"; front.strokeStyle = "#261911"; front.stroke();
+          }
+          const fd = v - 12.7;
+          if (fd >= 0 && fd < 0.32) { const y = 350 + (436 - 350) * easeFall(fd / 0.32) + 12; drawDrop(front, 180, y, 14, 20, 0, true, "#6F4A2E"); }
+          if (fd >= 0.32 && fd < 1.22) { const u = (fd - 0.32) / 0.9, rx = 32 * easeRipple(u);
+            front.beginPath(); front.ellipse(180, 456, Math.max(0.01, rx), Math.max(0.01, rx * 0.25), 0, 0, TAU);
+            front.lineWidth = 2; front.strokeStyle = "rgba(111,74,46," + (0.6 * (1 - u)).toFixed(3) + ")"; front.stroke(); }
+        }
+
+        // ---------- S6 정지 그림 (다 찬 블롭, 숫자 없음) ----------
+        function drawS6() {
+          s6c.setTransform(2, 0, 0, 2, 0, 0); s6c.clearRect(0, 0, 360, 800);
+          const cy = 312, clip = () => { s6c.beginPath(); s6c.roundRect(16, cy - 110, 328, 220, 110); };
+          clip(); s6c.fillStyle = "#F0E5DF"; s6c.fill();
+          s6c.save(); clip(); s6c.clip(); const sy = cy + 110 - 200;
+          s6c.fillStyle = "#FFDCC4"; s6c.fillRect(0, sy, 360, 400);
+          s6c.beginPath(); s6c.moveTo(0, sy); s6c.lineTo(360, sy); s6c.lineWidth = 2.5; s6c.strokeStyle = "#6F4A2E"; s6c.stroke(); s6c.restore();
+        }
+        drawS6();
+
+        const proxy = { t: 0 };
+        const tl = gsap.timeline({ paused: true });
+        tl.fromTo(proxy, { t: 0 }, { t: 21, duration: 21, ease: "none", onUpdate: () => renderAt(proxy.t) }, 0);
+        window.__timelines = window.__timelines || {};
+        window.__timelines["main"] = tl;
+        renderAt(0);
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

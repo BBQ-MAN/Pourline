@@ -1,0 +1,579 @@
+{
+  "runs": [
+    {
+      "workflow": "protocol-verify",
+      "runId": "wf_c5fe0c59-af9",
+      "date": "2026-10-28",
+      "args": {},
+      "note": "실패: 세션 중 생성한 에이전트 유형 미로드. 대체 경로 추가 후 재실행"
+    },
+    {
+      "workflow": "protocol-verify",
+      "runId": "wf_6c2fa4fe-b38",
+      "date": "2026-10-28",
+      "args": {},
+      "result": {
+        "claims": 207,
+        "confirmed": 158,
+        "unconfirmed": 49,
+        "refuted": 0,
+        "mismatches": 0,
+        "agents": 419,
+        "note": "에이전트 유형 미로드 → 대체 경로로 실행"
+      }
+    },
+    {
+      "workflow": "design-review",
+      "runId": "wf_771ab4fa-5a7",
+      "date": "2026-10-28",
+      "args": {},
+      "result": {
+        "findings": 66,
+        "confirmed": 53,
+        "dismissed": 13,
+        "applied": "all",
+        "declined": 2,
+        "postRevision": 9,
+        "note": "후속 9+2건은 설계자 수정(2026-10-28), consistency 재검증 대기"
+      }
+    },
+    {
+      "workflow": "protocol-verify",
+      "runId": "wf_dd33e806-f1b",
+      "date": "2026-10-28",
+      "args": {
+        "deviceLogs": [
+          "_workspace/04_device_probeA_mac.log",
+          "_workspace/04_device_probeA_result.md"
+        ],
+        "feedback": "프로브 A 결과 반영(요약 _workspace/04_device_probeA_result.md)"
+      },
+      "result": {
+        "claims": 327,
+        "confirmed": 301,
+        "unconfirmed": 21,
+        "refuted": 5,
+        "mismatches": 0,
+        "untracked": 3,
+        "agents": 657,
+        "note": "반박 5건은 결과 요약 숫자 오류 → analyst 정정"
+      }
+    },
+    {
+      "workflow": "design-review",
+      "runId": "wf_7fcb4ac0-2df",
+      "date": "2026-10-29",
+      "args": {
+        "only": [
+          "consistency"
+        ]
+      },
+      "note": "실기기 결과·공식 스킬·레시피 5개·자동 완료 결정 반영 후 정합성 재검증 — 중단: 실행 중 architecture.md·milestones.json 수정됨, wf_23dc8f07-fc5로 새로 실행"
+    },
+    {
+      "workflow": "design-review",
+      "runId": "wf_23dc8f07-fc5",
+      "date": "2026-10-29",
+      "args": {
+        "only": [
+          "consistency"
+        ]
+      }
+    },
+    {
+      "workflow": "implement-milestones",
+      "runId": "wf_aa0dd185-113",
+      "date": "2026-10-29",
+      "args": {
+        "milestones": [
+          "M1",
+          "M2",
+          "M3"
+        ],
+        "maxFixRounds": 2
+      },
+      "result": {
+        "M1": "done",
+        "M2": "done",
+        "M3": "done",
+        "tests": 112,
+        "report": "_workspace/03_report_wf_aa0dd185-113.md"
+      }
+    },
+    {
+      "workflow": "implement-milestones",
+      "runId": "wf_487a9e30-192",
+      "date": "2026-10-29",
+      "args": {
+        "milestones": [
+          "M4",
+          "M5",
+          "M6"
+        ],
+        "maxFixRounds": 2
+      },
+      "result": {
+        "M4": "awaiting-device",
+        "M5": "done",
+        "M6": "done",
+        "tests": 240,
+        "report": "_workspace/03_report_wf_487a9e30-192.md"
+      }
+    },
+    {
+      "workflow": "implement-milestones",
+      "runId": "wf_3dffb2b1-eab",
+      "date": "2026-10-29",
+      "args": {
+        "milestones": [
+          "M7",
+          "M8",
+          "M9"
+        ],
+        "maxFixRounds": 2
+      },
+      "result": {
+        "M7": "failed→blocked",
+        "M8": "skipped",
+        "M9": "skipped",
+        "report": "_workspace/03_report_wf_3dffb2b1-eab.md"
+      }
+    },
+    {
+      "workflow": "implement-milestones",
+      "runId": "wf_ae0e3eb3-6df",
+      "date": "2026-10-29",
+      "args": {
+        "milestones": [
+          "M7"
+        ],
+        "reviewOnly": true,
+        "maxFixRounds": 2
+      },
+      "note": "M7 차단 지적 2건(버튼 테두리 대비, 목록 들여쓰기) 수정 뒤 재검사",
+      "result": {
+        "M7": "failed(차단 3건)",
+        "decision": "3건 직접 수정 후 M7 완료",
+        "report": "_workspace/03_report_wf_ae0e3eb3-6df.md"
+      }
+    },
+    {
+      "workflow": "design-review",
+      "runId": "wf_01c38aae-76b",
+      "date": "2026-10-29",
+      "args": {},
+      "note": "유기적 디자인(B+A) 반영 후 전체 관점 재검증",
+      "result": {
+        "findings": 51,
+        "confirmed": 35,
+        "dismissed": 16,
+        "declined": 7,
+        "postRevision": 6,
+        "high": "영점 뒤 2~3프레임 영점 전 무게로 자동 시작 오작동 → FIX-1"
+      }
+    },
+    {
+      "workflow": "implement-milestones",
+      "runId": "wf_3ccc71c5-d08",
+      "date": "2026-10-29",
+      "args": {
+        "milestones": [
+          "FIX-1",
+          "FIX-2",
+          "M7R",
+          "FIX-3"
+        ],
+        "maxFixRounds": 2
+      },
+      "result": {
+        "FIX-1": "done",
+        "FIX-2": "done",
+        "M7R": "done",
+        "FIX-3": "done",
+        "report": "_workspace/03_report_wf_3ccc71c5-d08.md"
+      }
+    },
+    {
+      "workflow": "implement-milestones",
+      "runId": "wf_2a5c3c14-a7b",
+      "date": "2026-10-30",
+      "args": {
+        "milestones": [
+          "FIX-4",
+          "M8",
+          "M9"
+        ],
+        "maxFixRounds": 2
+      },
+      "note": "FIX-4·M8 model opus. 시작 전 밸브 신호 문구(마지막 하나만)·S8 바꾸기 칸 폭 64 dp를 ui-design에 맞춤, FIX-4에 공허 통과 임계값 테스트 수정 조건 추가. 캔버스 S8-Edit(스위치 행)·S8-Valve(명세대로)·S8-Valve-Invalid 추가 게시(버전 6) | 2026-10-30 사용자 결정(밸브 단계 체크)으로 중단(TaskStop). FIX-4 코드 일부 남김"
+    },
+    {
+      "workflow": "design-review",
+      "runId": "wf_c0c42c6a-ba7",
+      "date": "2026-10-30",
+      "args": {
+        "only": [
+          "consistency",
+          "a11y"
+        ]
+      },
+      "decision": "밸브 S8 편집을 단계 카드 체크로 변경(사용자 결정 2026-10-30): 하리오 끝 2:30, 기다리기 단계 S1 건너뜀, 새 단계 앞 상태 따름 + 스위치 바꾸는 단계 넣기. 캔버스 버전 9"
+    },
+    {
+      "workflow": "design-review",
+      "runId": "wf_d23ceb63-8a5",
+      "date": "2026-10-30",
+      "args": {
+        "only": [
+          "consistency"
+        ]
+      },
+      "note": "1차(wf_c0c42c6a-ba7) 확정 9·반영 13·반영 뒤 불일치 6 → 설계자 수정 + protocol C-01-14(용량 미확정) 추가. 2차 확정 3 반영, 반영 뒤 low 2건은 코디네이터가 직접(영점 전 무게 '실측 약 300 ms', 9.8 정리, M8 B4 C-0D-2 기록). 밸브 단계 체크 관련 지적 0"
+    },
+    {
+      "workflow": "implement-milestones",
+      "runId": "wf_d0bbcb11-ada",
+      "date": "2026-10-30",
+      "args": {
+        "milestones": [
+          "FIX-4",
+          "FIX-5",
+          "M8"
+        ],
+        "maxFixRounds": 2
+      },
+      "note": "사용자 승인(2026-10-30). 밸브 단계 체크 모델. 중단된 wf_2a5c3c14-a7b의 FIX-4 코드 위에서 시작"
+    },
+    {
+      "workflow": "implement-milestones",
+      "runId": "wf_f65760f7-857",
+      "date": "2026-11-02",
+      "args": {
+        "maxFixRounds": 2,
+        "milestones": [
+          "M8"
+        ]
+      },
+      "note": "M8 재실행. 사용자 결정(2026-11-02): 밸브 알림 Assertive, 가로 지표 상한 24 sp + 무게 s′≤s₀, 구현 이탈 3건 명세 반영. wf_d0bbcb11-ada 남은 지적 11건을 완료 조건 2개로 추가"
+    },
+    {
+      "workflow": "implement-milestones",
+      "runId": "wf_ff312014-b28",
+      "date": "2026-11-02",
+      "args": {
+        "maxFixRounds": 2,
+        "milestones": [
+          "FIX-6",
+          "DEMO-1",
+          "M9"
+        ]
+      },
+      "note": "사용자 지시(Hermes 경유, 2026-11-02): 완성까지 진행, 결정은 하네스 추천 잠정. P1·P2·P4 반영, 데모 저울 1단계"
+    },
+    {
+      "workflow": "implement-milestones",
+      "runId": "wf_1db05a96-4f1",
+      "date": "2026-11-02",
+      "args": {
+        "maxFixRounds": 2,
+        "milestones": [
+          "FIX-6",
+          "M9",
+          "M10"
+        ]
+      },
+      "note": "FIX-6 P6 재실행 + M9 + M10"
+    },
+    {
+      "workflow": "implement-milestones",
+      "runId": "wf_0521af98-5ca",
+      "date": "2026-11-02",
+      "args": {
+        "maxFixRounds": 2,
+        "milestones": [
+          "M9",
+          "M10",
+          "M11"
+        ]
+      },
+      "note": "M9·M10 재실행(남은 지적, P7·P8) + M11"
+    },
+    {
+      "workflow": "implement-milestones",
+      "runId": "wf_49f8767a-590",
+      "date": "2026-11-02",
+      "args": {
+        "maxFixRounds": 2,
+        "milestones": [
+          "DEMO-2",
+          "DEMO-3"
+        ]
+      },
+      "note": "데모 저울 진입·release 제외·에뮬레이터 계측 테스트. 에뮬레이터 emulator-5554는 오케스트레이터가 띄움"
+    }
+  ],
+  "decisions": [
+    {
+      "date": "2026-10-29",
+      "decision": "설계 승인",
+      "by": "사용자(\"남은 7건 고치고 승인\")",
+      "basis": "design-review wf_771ab4fa-5a7, wf_23dc8f07-fc5 + 후속2 반영(_workspace/02_design_followup2.md)"
+    },
+    {
+      "date": "2026-10-29",
+      "decision": "M7 차단 3건 직접 수정 후 awaiting-device(리뷰 워크플로 재실행 없음), verify.sh exit 0 (verify_20261029_161238.log)",
+      "by": "사용자"
+    },
+    {
+      "date": "2026-10-29",
+      "decision": "유기적 디자인(흐르는 움직임, 곡선·자연 형태)으로 디자인 재설계. ECC 디자인·모션 스킬 + HyperFrames 모션 프로토타입. M8 전에 디자인 먼저, M8·M9 보류. 완성 뒤 전체 페이지를 아티팩트로 정리",
+      "by": "사용자"
+    },
+    {
+      "date": "2026-10-29",
+      "decision": "시안 B+A 조합, D6 개정(모양 겹 60 ms), 다크 프로토타입, 자동 완료 시 바로 S6",
+      "by": "사용자"
+    },
+    {
+      "date": "2026-10-29",
+      "decision": "유기적 디자인(B+A) 설계 승인. 캔버스 https://claude.ai/artifact/YYDJ29R4mkWt26TRpp3sUU",
+      "by": "사용자"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "P1",
+      "decision": "가로 화면(높이 제한) 밸브 칸: 아이콘과 상태 글자를 한 줄에 둔다(104 → 약 76 dp). 세로 화면은 그대로",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": [
+        "아이콘·상태 한 줄(채택)",
+        "여백만 줄이기(92 dp, 여유 2 dp)",
+        "가로 납작 칸(약 48 dp)",
+        "왼쪽 칸 스크롤 허용"
+      ],
+      "basis": "wf_f65760f7-857 남은 지적: 타이머 아래 끝 282 dp > 보이는 끝 272 dp(10 dp 넘침). 한 줄 배치는 28 dp를 되찾아 여유가 있고, 지표 24 sp 상한·무게 우선(사용자 결정 2026-11-02)을 바꾸지 않는다",
+      "revertCost": "낮음: ui-design 4.11 넓은 창 단락과 ValveCell 배치 분기 하나, 스크린샷 brew_running_valve_landscape 재기록"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "P2",
+      "decision": "V60 기본·6888에 기다리기 단계('0:40까지 기다리기', 60 g, 40 s)를 넣는다. 시드 데이터만 고치고 DB 이전은 만들지 않는다(앱 미배포)",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": [
+        "넣기, 시드만 수정(채택)",
+        "넣기 + DB Migration(1→2)",
+        "그대로 두기"
+      ],
+      "basis": "1단계 이름이 '30초 기다리기'인데 목표선이 0:10부터 올라 레시피대로 따라도 '22초 늦음'이 뜬다. 악마의 레시피와 같은 기다리기 단계 모델(FIX-4)로 해결. 배포 전이라 설치된 DB가 사용자에게 없다",
+      "revertCost": "낮음: architecture 8.3·ui-design 5.6 표와 DefaultRecipes.kt·DefaultRecipesTest 행 되돌리기. 배포 뒤에 바꾸면 Migration 필요"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "P3",
+      "decision": "M8은 남은 차단 지적이 P1·P2 결정 항목뿐이므로, P1·P2를 FIX-6으로 구현해 품질 게이트를 통과하면 done으로 바꾼다 (2026-11-02 정정: M8에는 [실기기] 조건 8개가 남아 있어 done이 아니라 awaiting-device로 둔다)",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": [
+        "FIX-6 분리 후 M8 done(채택)",
+        "M8 세 번째 재실행"
+      ],
+      "basis": "M8 완료 조건 53 pass·fail 0(실기기 8 unverified). 남은 지적은 사용자 판단 항목뿐이고 구현자는 지시대로 손대지 않음. 61개 조건 전체 재실행(에이전트 40+)보다 범위가 좁은 FIX가 비용이 작다",
+      "revertCost": "없음: 상태 표시만 바뀐다"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "P4",
+      "decision": "P1 한 줄 밸브 칸: 아이콘 24→20 dp, 아이콘·글자 간격 4→2 dp(칸 폭 64 dp 유지). 글꼴 1.15 이상에서 한 줄이 56 dp를 넘으면 기존 세로 쌓기(104 dp)로 돌아가고 넘침은 3.2대로 스크롤",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": [
+        "아이콘 20 dp·간격 2 dp(채택)",
+        "칸 폭 64 → 72 dp로 넓히기",
+        "상태 글자 크기 줄이기"
+      ],
+      "basis": "아이콘 24 + 4 + '닫힘' 32.3 = 60 dp > 칸 내용 폭 56 dp. 20 + 2 + 32.3 = 54.3 dp(여유 1.7 dp). 칸 폭·글자 크기(대비·가독)는 바꾸지 않음. ui-design 4.11",
+      "revertCost": "낮음: ui-design 4.11 수치와 ValveCell 한 줄 분기 값"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "DEMO-D1",
+      "decision": "데모 저울 주입 계층: 채택 (2)",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": "(1) `FakeScaleClient`를 감싸 프레임을 재조립기·환원기에 흘리는 펌프 (2) 가짜 `GattTransport`를 실제 `BleScaleClient`에 끼움",
+      "basis": "(1)은 `send()`가 바이트를 만들지 않고 연결 상태를 스크립트로 정해, 에뮬레이터에서 보려는 명령 응답·재연결·블루투스 처리 코드를 지나지 않는다. (2)는 그 코드를 실기기와 같게 지나고 `BleScaleClient` 시그니처를 바꾸지 않는다. testFixtures 재사용(사용자 지시)은 저울 흉내를 같은 소스셋에 두는 것으로 지킨다",
+      "revertCost": "중간: `:core:ble` debug 파일 3~4개를 버리고 펌프를 새로 쓴다. `DemoScaleDevice`·`DemoFrames`는 그대로 쓴다",
+      "ref": "architecture.md 10.1.7"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "DEMO-D2",
+      "decision": "데모 저울 코드 위치·release 제외: 채택 (1)",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": "(1) 흉내 = testFixtures, transport = `:core:ble` `src/debug`, 진입 = `:app` `src/debug`·`src/release` (2) 전부 `:app` `src/debug` (3) 새 모듈 `:core:demo`(`debugImplementation`)",
+      "basis": "흉내는 순수 JVM이라 `:core:protocol` test에서 수 초에 검증된다. transport는 `BleScaleClient` `internal` 생성자를 써야 해서 `:core:ble` 안이어야 한다((2)·(3)은 `internal`을 못 쓴다). AGP 변형 소스셋이라 release에서 코드와 의존성이 함께 빠진다",
+      "revertCost": "낮음: 파일 이동",
+      "ref": "architecture.md 10.1.7"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "DEMO-D3",
+      "decision": "데모 저울 프레임 출처: 채택 (1)",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": "(1) 합성(바이트를 실측 벡터와 같게 고정) (2) 실측 로그 재생 (3) 둘 다",
+      "basis": "재생은 앱의 영점·타이머 쓰기에 응답할 수 없어 흐름이 끊긴다. 합성 바이트를 벡터와 같게 테스트로 묶어 실측과의 거리를 없앤다. 영점 순서는 실측 모양(C-0D-2) 그대로",
+      "revertCost": "낮음: `DemoScenario`에 재생 항목 하나 추가",
+      "ref": "architecture.md 10.1.7"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "DEMO-D4",
+      "decision": "데모 저울 진입: 채택 (1)",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": "(1) debug 런처 별칭 `DemoLauncher`(시작 컴포넌트로 판정) (2) adb intent extra (3) S2에 디버그 전용 토글 UI (4) 에뮬레이터 자동 감지",
+      "basis": "extra를 읽지 않아 9.1 Intent 규칙을 debug에서도 지킨다. 사람은 아이콘, 자동화는 `am start -S -n …/.DemoLauncher`. S2 화면·ui-design 변경 없음(후보 목록이 곧 시나리오 메뉴). 자동 감지는 가상 블루투스가 있는 AVD에서 갈리고 실기기 debug(프로브 B)를 흐릴 수 있다",
+      "revertCost": "낮음: 매니페스트 별칭과 판정 한 줄",
+      "ref": "architecture.md 10.1.7"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "DEMO-D5",
+      "decision": "데모 저울 오류 화면: 채택 블루투스 (1), 권한 (1)",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": "블루투스: (1) 데모 환경이 꺼짐 사건을 냄 (2) 실제 시스템 블루투스. 권한: (1) 실제 시스템 권한 (2) 데모 환경이 거부를 흉내",
+      "basis": "에뮬레이터 블루투스 유무가 AVD·판마다 다르다. 데모 사건도 실제 `observeBluetooth` 콜백 경로를 지난다. 권한은 하드웨어와 상관없이 에뮬레이터에서 실제로 동작하고, `AndroidPermissionMonitor`와 `BleScaleClient`가 같은 값을 봐야 한다",
+      "revertCost": "낮음",
+      "ref": "architecture.md 10.1.7"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "DEMO-D6",
+      "decision": "데모 저울 계측 테스트: 채택 (2)",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": "(1) 없음(수동만) (2) `connectedDebugAndroidTest`로 V60 흐름·CSV·밸브·오류 화면 + JVM 가상 시간 종단 테스트 (3) 모든 화면 계측",
+      "basis": "에뮬레이터 확인을 명령 하나의 통과·실패로 판정한다. 시간 많이 드는 밸브 판정은 JVM 가상 시간으로 먼저 고정하고 에뮬레이터에서는 한 번만 본다. 화면 모양은 Roborazzi가 이미 맡는다",
+      "revertCost": "낮음: androidTest 소스와 의존성 3줄",
+      "ref": "architecture.md 10.1.7"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "DEMO-D7",
+      "decision": "데모 저울 컨테이너 생성 시점: 채택 (1)",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": "(1) `TimemoreApp.container`를 `by lazy`로 (2) 모드가 다르면 프로세스를 다시 시작",
+      "basis": "Application `onCreate`가 Activity보다 먼저라 시작 컴포넌트를 보려면 첫 접근을 늦춰야 한다. 재시작 코드는 기기마다 동작이 달라 두지 않는다(모드가 다르면 Toast)",
+      "revertCost": "낮음: 한 줄",
+      "ref": "architecture.md 10.1.7"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "P5",
+      "decision": "6888 2·3차 붓기 뒤와 테츠 카스야 기본의 기다림(레시피대로 따라도 '늦음' 최대 약 20 s·40 s)은 이번에 고치지 않고 알려진 문제로 둔다",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": [
+        "알려진 문제로 둠(채택)",
+        "P2처럼 기다리기 단계를 더 넣음"
+      ],
+      "basis": "P2는 단계 이름이 '기다리기'라고 명시한 V60·6888 뜸만 다뤘다. 나머지는 원 레시피 해석(붓는 속도 vs 대기)이 필요해 사용자 판단 몫. 기다리기 단계 모델(FIX-4)로 시드 행만 더하면 고칠 수 있다",
+      "revertCost": "낮음: architecture 8.3·ui-design 5.6 표와 DefaultRecipes 행 추가(배포 전이면 이전 없음)",
+      "ref": "architecture.md 8.3"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "P6",
+      "decision": "리본 그래프 기다리기 구간: 모든 레시피(밸브 레시피 포함)에서 평평한 목표 점선을 2.5 dp 실제 중심선 위에 한 번 더 그린다. 세로 밸브 스크린샷 중 이 규칙으로 픽셀이 바뀌는 것은 다시 기록한다",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": [
+        "모든 레시피 점선을 위에(채택)",
+        "실선을 위에 두고 기다림은 뒤 배경 띠로 표시",
+        "실선을 위에 두고 기다림 표시 없음(지금 하리오)"
+      ],
+      "basis": "wf_ff312014-b28 FIX-6 남은 지적: ui-design 4.4 목표선 행(실선이 위)과 단계 표식 행(기다림은 평평한 목표선이 보임)이 서로 어긋나고, V60·6888과 하리오·악마가 다르게 그려짐. 이미 V60에 구현된 방식을 넓히는 것이 가장 작은 변경이고, 기다리는 동안 '계획도 멈춤'이 보인다",
+      "revertCost": "낮음: BrewChart 그리기 조건 한 줄, ui-design 4.4 문장, 해당 스크린샷 재기록"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "P7",
+      "decision": "S8 저장 중에는 뒤로 가기를 삼킨다(isBackEnabled = hasUnsavedChanges || Saving, D4 없음)",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": [
+        "저장 중 뒤로 가기 막기(채택)",
+        "명세대로 hasUnsavedChanges만(저장 중 떠날 수 있음)",
+        "저장 중 hasUnsavedChanges를 true로 유지(VM)"
+      ],
+      "basis": "M10 리뷰: 구현은 ui-design 5.7(저장 중 화면 유지)과 맞고 architecture 조건 문구만 달랐다. 저장 중 떠나면 저장 실패를 보지 못한다",
+      "revertCost": "낮음: 조건 한 줄과 테스트"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "P8",
+      "decision": "recipe_edit_valve 스크린샷을 첫 화면(스위치+미리보기+1단계 위쪽)과 recipe_edit_valve_cards(1단계 넣기~2단계 머리) 두 장으로 나눈다",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": [
+        "장면 둘로 나누기(채택)",
+        "첫 화면 보조 문구를 줄여 1~2단계를 넣기"
+      ],
+      "basis": "360×800 첫 화면에 1~2단계 카드가 다 들어가지 않는다. 화면 밀도를 바꾸지 않고 검증 장면만 늘린다",
+      "revertCost": "낮음: 스크린샷 하나"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "P9",
+      "decision": "완료 조건을 모두 통과했고 남은 차단 지적이 마지막 리뷰에서 새로 나온 medium 몇 건뿐이면, 워크플로를 또 돌리지 않고 구현자 1명이 고친 뒤 verify.sh·verifyRoborazziDebug 통과와 QA 1명의 대상 확인(지적별 고쳐짐)으로 done 처리한다",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": [
+        "직접 수정 + 대상 QA 확인(채택)",
+        "워크플로 재실행(수정 2라운드, 에이전트 40~80개)",
+        "남은 지적을 알려진 문제로 두고 done"
+      ],
+      "basis": "M8·M10·M11에서 리뷰 라운드마다 새 지적이 나와 18→8→11, 13→4→8처럼 수렴하지 않음. 완료 조건은 이미 전부 통과. 비용 대비 효과가 낮은 반복을 막고 지적 자체는 고친다",
+      "revertCost": "중간: 같은 마일스톤을 reviewOnly 워크플로로 다시 돌리면 전체 리뷰를 다시 받을 수 있다"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "P10",
+      "decision": "S7 추출 진행 중 상태에 보이는 이유 배너('추출 중에는 레시피를 바꿀 수 없습니다' + '추출 화면으로' TextButton, secondaryContainer, shapes.medium)를 목록 맨 위에 둔다",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": [
+        "보이는 배너 추가(채택)",
+        "지금처럼 비활성 버튼만(이유는 TalkBack stateDescription에만)"
+      ],
+      "basis": "M10 리뷰: 비활성 '추출' 버튼만 보여 이유를 알 수 없음(D10 상태 설명). S1 배너와 같은 부품 재사용",
+      "revertCost": "낮음: 배너 한 개와 스크린샷 2장"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "P11",
+      "decision": "데모 저울 '끊김·재연결' 시나리오의 무응답 구간을 붓기 20.0~23.5 s에서 20.0~25.0 s로 늘린다(architecture 10.1.2, DEMO-3 구현자 변경을 채택)",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": [
+        "구간 25 s로 늘림(채택)",
+        "23.5 s 유지하고 테스트에서 NoData 배너 확인을 뺌",
+        "NoData 판정 주기를 1 s보다 짧게(앱 동작 변경)"
+      ],
+      "basis": "NoData는 1 s Tick에서만 판정되어 23.5 s 끝에서는 판정 창이 약 0.5 s라 에뮬레이터 실행 절반에서 배너가 안 보였다. 데모(디버그 전용) 데이터만 바뀌고 앱 동작은 그대로",
+      "revertCost": "낮음: DemoScaleDevice 상수와 JVM 테스트 2개"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "P12",
+      "decision": "API 31+에서 BLUETOOTH_CONNECT 권한 없이 '블루투스 켜기'를 누르면 권한 요청을 먼저 띄우고, 켜기 화면 실행이 실패하면 시스템 블루투스 설정을 연다(ActivitySystemActions.requestEnableBluetooth). 상태 판정 순서(블루투스 꺼짐이 권한 없음보다 먼저)는 바꾸지 않는다",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": [
+        "버튼 동작에서 권한 먼저(채택)",
+        "판정 순서를 권한 없음 → 블루투스 꺼짐으로 바꾸고 ui-design 10.x 수정"
+      ],
+      "basis": "최종 통합 QA high [Q10]: ACTION_REQUEST_ENABLE은 API 31+에서 BLUETOOTH_CONNECT가 없으면 SecurityException으로 앱이 종료될 수 있다. 버튼 동작만 바꾸면 화면·명세·스크린샷이 그대로다",
+      "revertCost": "낮음: 함수 하나와 테스트 2개. 판정 순서 변경을 고르면 배너 문구·스크린샷 재기록이 따른다"
+    },
+    {
+      "date": "2026-11-02",
+      "id": "P13",
+      "decision": "최종 디자인 검증 medium 4건 중 2건을 고친다: S7·S9 빈 상태·오류 상태를 위쪽 정렬(ui-design 6.3, 위 32 dp), S8 원두·물 칸을 글꼴 1.3배 이상에서 세로로 쌓기. 나머지 2건(대화상자 폭 D1·D2·D5가 360 dp 전체로 퍼짐, w220·글꼴 200%에서 음절 중간 줄바꿈)은 알려진 문제로 둔다",
+      "by": "하네스 추천(잠정, 사용자 최종 검토 대기)",
+      "options": [
+        "명세와 맞는 2건만 수정(채택)",
+        "4건 모두 수정(공용 대화상자 부품 신설·줄바꿈 규칙 변경)",
+        "모두 알려진 문제로 둠"
+      ],
+      "basis": "_workspace/05_final_design_review.md. 앞 2건은 명세(6.3, 기존 1.3배 규칙)와 어긋난 구현이라 고치는 것이 명확. 대화상자 폭은 Robolectric 렌더링 특성일 수 있어 실기기 확인이 먼저이고, w220은 안드로이드 최소 창 근처의 극단 경우",
+      "revertCost": "낮음: 정렬 두 곳과 조건 분기 하나"
+    }
+  ]
+}
