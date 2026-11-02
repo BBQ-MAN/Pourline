@@ -14,7 +14,7 @@ TIMEMORE Dot 커피 저울(BLE)용 Android 앱. Kotlin + Jetpack Compose. 앱 �
 
 ## 프로토콜
 
-- 원문: TIMEMORE 공식 공개 문서 [Timemore Black Mirror SCALE BLE Protocol v1.0.3](https://github.com/TIMEMORE-COFFEE/open-scale-protocol). 사본이 `docs/protocol/source/`에 있다.
+- 원문: TIMEMORE 공식 공개 문서 [Timemore Black Mirror SCALE BLE Protocol v1.0.3](https://github.com/TIMEMORE-COFFEE/open-scale-protocol). 사본은 로컬 `docs/protocol/source/`에 두고 저장소에는 올리지 않는다(원 저장소에 라이선스 표기가 없음). 새로 클론했다면 원 저장소의 `Timemore Black Mirror SCALE BLE Protocol.md`를 그 폴더에 받아 둔다(하네스의 프로토콜 분석 단계가 이 파일을 읽는다).
 - 요약: GATT 서비스 `0xFFF0`, 알림 `0xFFF1`(저울 → 앱), 쓰기 `0xFFF2`(앱 → 저울, Write without response). 프레임 = 헤더 `A5 5A` + opcode + cmd + 길이(2바이트, big-endian) + payload + CRC-16(2바이트). 무게·유량·타이머 알림은 100 ms마다 온다.
 - 원문에 빠져 있어 실기기로 확인해야 하는 항목:
   - CRC의 반사(reflect) 여부와 xorout
@@ -104,7 +104,7 @@ python3 -I .claude/skills/ui-design-review/scripts/contrast.py 1C1B1F:FFFBFE
 ## 디렉터리
 
 ```
-docs/protocol/source/   공식 프로토콜 원문 (수정하지 않음)
+docs/protocol/source/   공식 프로토콜 원문 (수정하지 않음, 로컬 전용·git 제외)
 docs/spec/              명세·설계 문서 (개발 중 생성)
 screenshots/            화면 상태별 스크린샷 (구현 중 생성)
 _workspace/             에이전트 중간 산출물, 빌드 로그, 실기기 로그
