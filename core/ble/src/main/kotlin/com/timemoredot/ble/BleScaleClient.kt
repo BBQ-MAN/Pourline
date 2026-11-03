@@ -110,6 +110,8 @@ class BleScaleClient internal constructor(
     private var scannerRunning = false
     private var lastScanStartNanos: Long? = null
     private val advLogged = mutableSetOf<String>()
+    private var scanHits = 0                  // 이번 스캐너 시작 뒤 받은 결과 수(후보 아닌 것 포함), 진단 로그용
+    private var unfilteredScan = false        // F-TAB-1: 한 번 전환하면 이 프로세스 동안 필터 없이. 매 스캔 재시작으로 30 s 5회 제한을 넘지 않게
 
     init {
         _connection.value = blockedState(forScan = true) ?: ConnectionState.Idle   // 5.4: 생성 때 블루투스·권한·위치 확인
@@ -198,18 +200,21 @@ class BleScaleClient internal constructor(
         advLogged.clear()
         _connection.value = ConnectionState.Scanning
         scanJob = scope.launch {
-            // 30 s에 5회 제한(android-ble 2절): 직전 실제 시작 6 s 안이면 늦춘다
-            lastScanStartNanos?.let { delay((it + SCAN_RESTART_GAP_NANOS - clock.nowNanos()) / NANOS_PER_MS) }
-            lastScanStartNanos = clock.nowNanos()
-            try {
-                scannerRunning = true
-                scanner.start(::onScanHit, ::onScanFailed)
-            } catch (e: SecurityException) {
-                scannerRunning = false
-                _connection.value = ConnectionState.PermissionMissing
-                return@launch
+            // 6절 F-TAB-1: 오프로드 필터가 없거나 이미 전환했으면 처음부터 필터 없이
+            val filtered = !unfilteredScan && scanner.offloadedFilteringSupported
+            if (!launchScanner(filtered)) return@launch
+            if (filtered) {
+                delay(SCAN_FALLBACK_MS)
+                if (_scanResults.value.isEmpty()) {
+                    log { FrameLogFormat.ev("scan switch filter=off: 필터 스캔 ${SCAN_FALLBACK_MS} ms 후보 0") }
+                    unfilteredScan = true
+                    haltScanner()
+                    if (!launchScanner(filtered = false)) return@launch
+                }
+                delay(SCAN_DURATION_MS - SCAN_FALLBACK_MS)
+            } else {
+                delay(SCAN_DURATION_MS)
             }
-            delay(SCAN_DURATION_MS)
             stopScanner()
             _connection.value = if (_scanResults.value.isEmpty()) ConnectionState.Failed(FailureReason.NoDeviceFound) else ConnectionState.Idle
         }
@@ -220,11 +225,34 @@ class BleScaleClient internal constructor(
         if (_connection.value == ConnectionState.Scanning) _connection.value = ConnectionState.Idle
     }
 
+    /** 30 s에 5회 제한(android-ble 2절): 직전 실제 시작 6 s 안이면 늦춘다. 권한이 없으면 false. */
+    private suspend fun launchScanner(filtered: Boolean): Boolean {
+        lastScanStartNanos?.let { delay((it + SCAN_RESTART_GAP_NANOS - clock.nowNanos()) / NANOS_PER_MS) }
+        lastScanStartNanos = clock.nowNanos()
+        scanHits = 0
+        log { FrameLogFormat.ev("scan start filter=${if (filtered) "on" else "off"} offload=${scanner.offloadedFilteringSupported}") }
+        try {
+            scannerRunning = true
+            scanner.start(filtered, ::onScanHit, ::onScanFailed)
+        } catch (e: SecurityException) {
+            scannerRunning = false
+            _connection.value = ConnectionState.PermissionMissing
+            return false
+        }
+        return true
+    }
+
     private fun stopScanner() {
         scanJob?.cancel()
         scanJob = null
+        haltScanner()
+    }
+
+    /** 스캔 작업은 두고 스캐너만 멈춘다(전환에서도 쓴다). */
+    private fun haltScanner() {
         if (!scannerRunning) return
         scannerRunning = false
+        log { FrameLogFormat.ev("scan stop hits=$scanHits candidates=${_scanResults.value.size}") }
         try {
             scanner.stop()
         } catch (e: SecurityException) {
@@ -234,6 +262,7 @@ class BleScaleClient internal constructor(
 
     private fun onScanHit(hit: ScanHit) {
         if (!scannerRunning) return
+        scanHits++
         val adv = hit.advertisement
         if (!isScaleCandidate(adv)) return   // 필터 구현 차이 방어
         if (advLogged.add(hit.address)) {
@@ -564,6 +593,7 @@ class BleScaleClient internal constructor(
         const val GATT_OP_TIMEOUT_MS = 5_000L
         const val SCAN_DURATION_MS = 10_000L
         const val SCAN_RESTART_GAP_NANOS = 6_000_000_000L
+        const val SCAN_FALLBACK_MS = 6_000L   // 재시작 간격(6 s)과 같게 해 전환이 늦춰지지 않는다
         const val NANOS_PER_MS = 1_000_000L
         const val MAX_RECONNECT_ATTEMPTS = 10
         const val GATT_ERROR_133 = 133

@@ -685,5 +685,22 @@
     ],
     "status": "awaiting-device",
     "deviceVerification": "실기기 재확인 대기. 리뷰 wf_3bc14053-ff0 통과(차단 지적 0), _workspace/03_report_wf_3bc14053-ff0.md"
+  },
+  {
+    "id": "FIX-10",
+    "title": "스캔: 오프로드 필터 미지원·필터 스캔 0건이면 필터 없는 스캔 전환, 스캔 진단 로그, S2 ScanEmpty 안내(F-TAB-1, F-TAB-2)",
+    "owner": "ble-engineer",
+    "dependsOn": [],
+    "ui": true,
+    "scope": "architecture.md 6절 스캔(2026-11-03), ui-design.md 5.2 ScanEmpty. BleScanner.offloadedFilteringSupported·start(filtered), BleScaleClient: 미지원이면 처음부터 필터 없이, 지원이면 6 s 후보 0일 때 전환(프로세스 동안 유지), isScaleCandidate로 거름. EV scan start/switch/stop 로그. 하네스 추천(잠정). 메인이 직접 구현(2026-11-03)",
+    "acceptance": [
+      "verify.sh 종료 코드 0",
+      "BleScanTest: offload=false면 첫 시작이 필터 없음이고 후보 아닌 광고는 버리며 'EV scan stop hits=2 candidates=1'. offload=true에서 6 s 후보 0이면 6 s에 필터 없이 재시작하고 다음 스캔은 처음부터 필터 없음. 후보가 있으면 전환하지 않음",
+      "스크린샷 screenshots/connect_scan_empty_light·dark에 새 설명 세 문장이 잘리지 않는다",
+      "[실기기 TAB-재확인] Lenovo TB-9707F에서 저울(페어링 모드 또는 다른 기기 연결 해제)을 켜고 찾기 → 10 s 안에 후보가 보이고 logcat에 'EV scan start filter=off offload=false'와 'EV ADV'가 있다",
+      "[실기기 TAB-재확인] Fold5·Fold8에서 찾기 → 'EV scan start filter=on offload=true' 뒤 전환 없이 후보가 보인다(회귀 없음)"
+    ],
+    "status": "awaiting-device",
+    "deviceVerification": "실기기 재확인 대기"
   }
 ]

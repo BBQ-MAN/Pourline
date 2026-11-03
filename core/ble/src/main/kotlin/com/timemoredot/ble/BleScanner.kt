@@ -20,7 +20,10 @@ internal data class ScanHit(val address: String, val rssi: Int, val advertisemen
 /** 스캐너 경계. 테스트는 가짜를 쓴다. 권한이 없으면 SecurityException을 던진다(BleScaleClient가 PermissionMissing으로 바꾼다).
  *  콜백은 메인 스레드에서 온다(ScanCallback 기본). */
 internal interface BleScanner {
-    fun start(onResult: (ScanHit) -> Unit, onFailed: (Int) -> Unit)
+    /** BluetoothAdapter.isOffloadedFilteringSupported. false인 기기(Lenovo TB-9707F)는 필터 스캔 결과가 0건이었다(F-TAB-1). */
+    val offloadedFilteringSupported: Boolean
+    /** filtered = false면 필터 없이 스캔한다. 거르기는 BleScaleClient의 isScaleCandidate가 한다. */
+    fun start(filtered: Boolean, onResult: (ScanHit) -> Unit, onFailed: (Int) -> Unit)
     fun stop()
 }
 
@@ -37,16 +40,20 @@ internal fun scaleScanFilters(): List<ScanFilter> = listOf(
 internal class AndroidBleScanner(private val context: Context) : BleScanner {
     private var callback: ScanCallback? = null
 
-    private fun leScanner() = context.getSystemService(BluetoothManager::class.java)?.adapter?.bluetoothLeScanner
+    private fun adapter() = context.getSystemService(BluetoothManager::class.java)?.adapter
+    private fun leScanner() = adapter()?.bluetoothLeScanner
 
-    override fun start(onResult: (ScanHit) -> Unit, onFailed: (Int) -> Unit) {
+    override val offloadedFilteringSupported: Boolean get() = adapter()?.isOffloadedFilteringSupported == true
+
+    override fun start(filtered: Boolean, onResult: (ScanHit) -> Unit, onFailed: (Int) -> Unit) {
         val scanner = leScanner() ?: return onFailed(-1)   // 블루투스 꺼짐
         val cb = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) = onResult(result.toHit())
             override fun onScanFailed(errorCode: Int) = onFailed(errorCode)
         }
         val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
-        scanner.startScan(scaleScanFilters(), settings, cb)
+        // 필터 없는 스캔은 화면이 꺼지면 시스템이 멈춘다(Android 8.1+). 스캔은 S2 화면에서만 하므로 상관없다
+        scanner.startScan(if (filtered) scaleScanFilters() else null, settings, cb)
         callback = cb
     }
 

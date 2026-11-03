@@ -96,6 +96,58 @@ class BleScanTest {
         assertTrue(!h.scanner.running)
     }
 
+    // F-TAB-1: 오프로드 필터 미지원(Lenovo TB-9707F, mMaxScanFilters 0)은 처음부터 필터 없이, 거르기는 isScaleCandidate
+    @Test fun offloadUnsupportedScansUnfilteredAndFiltersInApp() = runTest {
+        val h = Harness(this)
+        h.scanner.offloadedFilteringSupported = false
+        h.client.startScan()
+        runCurrent()
+        assertEquals(listOf(false), h.scanner.startFiltered)
+        assertTrue(h.logs.contains("EV scan start filter=off offload=false"))
+        h.scanner.hit(ADDR_B, name = "Headphones", mfr = null)                            // 다른 기기: 버림
+        h.scanner.hit(ADDR_A, name = "TIMEMORE_Dot", mfr = null, uuids = listOf(SCALE_SERVICE_UUID))   // (a) 서비스 UUID
+        assertEquals(listOf(ADDR_A), h.client.scanResults.value.map { it.address })
+        h.advance(10_000)
+        assertEquals(ConnectionState.Idle, h.state)
+        assertEquals(listOf(false), h.scanner.startFiltered)   // 전환 없음
+        assertTrue(h.logs.contains("EV scan stop hits=2 candidates=1"))
+    }
+
+    @Test fun filteredScanWithoutCandidateSwitchesToUnfilteredAt6s() = runTest {
+        val h = Harness(this)
+        h.client.startScan()
+        runCurrent()
+        h.advance(5_999)
+        assertEquals(listOf(true), h.scanner.startFiltered)
+        h.advance(1)
+        assertEquals(listOf(true, false), h.scanner.startFiltered)
+        assertEquals(listOf(0L, 6_000L), h.scanner.startTimesMs)   // 재시작 간격 6 s를 지킨다
+        assertTrue(h.logs.contains("EV scan stop hits=0 candidates=0"))
+        assertTrue(h.logs.any { it.startsWith("EV scan switch filter=off") })
+        assertTrue(h.scanner.running)
+        h.scanner.hit(ADDR_A, null)   // (b) 제조사 01 01
+        h.advance(4_000)
+        assertEquals(ConnectionState.Idle, h.state)
+        assertEquals(1, h.client.scanResults.value.size)
+        // 한 번 전환하면 다음 스캔은 처음부터 필터 없이(재시작 1회로 끝)
+        h.client.startScan()
+        h.advance(12_000)   // 직전 시작(6 s)에서 6 s 뒤인 12 s에 시작해 22 s에 끝난다
+        assertEquals(listOf(true, false, false), h.scanner.startFiltered)
+        assertEquals(listOf(0L, 6_000L, 12_000L), h.scanner.startTimesMs)
+        assertEquals(ConnectionState.Failed(FailureReason.NoDeviceFound), h.state)
+    }
+
+    @Test fun filteredScanWithCandidateDoesNotSwitch() = runTest {
+        val h = Harness(this)
+        h.client.startScan()
+        runCurrent()
+        h.advance(1_000)
+        h.scanner.hit(ADDR_A, null)
+        h.advance(9_000)
+        assertEquals(listOf(true), h.scanner.startFiltered)
+        assertEquals(ConnectionState.Idle, h.state)
+    }
+
     @Test fun scanEndsIdleWithCandidates() = runTest {
         val h = Harness(this)
         h.client.startScan()

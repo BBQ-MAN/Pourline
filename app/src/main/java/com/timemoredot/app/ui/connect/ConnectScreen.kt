@@ -220,7 +220,8 @@ private fun Header(
         ConnectionUi.LocationOff -> EmptyState(AppIcons.BluetoothDisabled, "위치 서비스를 켜야 저울을 찾을 수 있습니다", actionLabel = "위치 설정 열기", onAction = onOpenLocationSettings)
         ConnectionUi.ScanEmpty -> EmptyState(
             AppIcons.Bluetooth, "저울을 찾지 못했습니다",
-            description = "저울이 켜져 있는지, 다른 휴대폰에 연결돼 있지 않은지 확인하세요.",
+            // F-TAB-2: 다른 폰이 연결을 잡고 있거나 화이트리스트 방송이면 새 기기에서는 보이지 않는다
+            description = "저울을 켜고 가까이 두세요. 다른 휴대폰의 앱이나 블루투스를 끄세요. 처음 연결하는 기기라면 저울을 끈 뒤 버튼을 길게 눌러 페어링 모드로 켜세요.",
         )
         ConnectionUi.ScanFailed -> StatusBanner(BannerKind.Error, "찾기를 시작하지 못했습니다. 블루투스를 껐다 켜 보세요.", pad)
         ConnectionUi.NoDevice, ConnectionUi.Disconnected -> Hint("저울을 켜고 휴대폰 가까이 둔 뒤 찾기를 누르세요.")

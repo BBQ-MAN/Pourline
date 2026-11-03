@@ -153,15 +153,18 @@ internal class FakeEnvironment : BleEnvironment {
 
 internal class FakeScanner(private val nowMs: () -> Long) : BleScanner {
     val startTimesMs = mutableListOf<Long>()
+    val startFiltered = mutableListOf<Boolean>()
+    override var offloadedFilteringSupported = true
     var running = false
         private set
     var throwSecurity = false
     private var onResult: ((ScanHit) -> Unit)? = null
     private var onFailed: ((Int) -> Unit)? = null
 
-    override fun start(onResult: (ScanHit) -> Unit, onFailed: (Int) -> Unit) {
+    override fun start(filtered: Boolean, onResult: (ScanHit) -> Unit, onFailed: (Int) -> Unit) {
         if (throwSecurity) throw SecurityException("scan")
         startTimesMs += nowMs()
+        startFiltered += filtered
         running = true
         this.onResult = onResult
         this.onFailed = onFailed

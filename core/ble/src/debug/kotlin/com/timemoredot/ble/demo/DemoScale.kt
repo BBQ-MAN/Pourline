@@ -52,8 +52,9 @@ object DemoScale {
 /** 300 ms 뒤 DemoScenario 6개를 광고 하나씩으로 낸다(isScaleCandidate (b)를 지난다). 콜백은 scope 디스패처. */
 internal class DemoScanner(private val scope: CoroutineScope) : BleScanner {
     private var job: Job? = null
+    override val offloadedFilteringSupported = true
 
-    override fun start(onResult: (ScanHit) -> Unit, onFailed: (Int) -> Unit) {
+    override fun start(filtered: Boolean, onResult: (ScanHit) -> Unit, onFailed: (Int) -> Unit) {
         job?.cancel()
         job = scope.launch {
             delay(300)

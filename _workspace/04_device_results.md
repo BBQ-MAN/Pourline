@@ -116,3 +116,28 @@
 - **FIX deniedOnce 잔존 — 통과(adb).** 플래그 해제 + `pm grant`(설정에서 허용 대응) 뒤 앱 복귀 → "연결됨", `permission.xml` deniedOnce=false.
 - 미확인: F-F5-1 첫 연결 페어링 모드 안내(이 저울과 연결한 적 없는 폰 필요).
 - `svc power stayon false`로 복원(Fold5). Fold8은 연결되지 않아 미복원.
+
+## 수정판 재확인 (Fold8 SM-F971N Android 17, 2026-11-03 22:12~22:17, 로그 `04_device_b_F8_R1.log`, 해석 `F8_R1_parse.txt`)
+
+- **FIX 권한 막다른 화면(F-B2-1) — 통과(adb).** `user-fixed` + 앱 pref 삭제 상태에서 "권한 허용" 탭 → 85 ms 만에 `permanent=true` 판정, "설정 열기"로 바뀜.
+- **FIX deniedOnce 잔존 — 통과(adb).** 허용 뒤 복귀 시 `permission.xml` deniedOnce=false.
+- 재연결: 저울이 절전으로 꺼져 있는 동안 재연결 6회(연결 콜백 없음) → 사용자가 저울을 켜자 133 1회 후 연결(mtu 247), 10.00 Hz.
+- **정상 붓기 — 통과.** 영점(+156.4 s) 뒤 +159.65 s 1.7 g부터 단조 증가, +160.14 s `SetTimer(Start)`(첫 초과 뒤 0.48 s). 완료 +193.2 s `SetTimer(Stop)`.
+- **유량(O-B8-1) — 통과(화면).** 저장 뒤 새 추출 화면에서 서버를 들어 −254.7 g일 때 화면 유량 0.0 g/s, 타이머 00:00.0(`04_device_shots/F8_R1_end.png`). 들어 올릴 때 손 압력 튐(207→225 g) 뒤 −249.8 g에도 SetTimer 송신 없음.
+- **들어 올림 자동 시작(F-B4-1)** — 로그에 '영점 뒤 컵 들어 올림' 구간이 없음(첫 물체를 올린 뒤 영점·붓기로 바로 진행). Fold5에서 통과했고 판정 로직은 순수 Kotlin(`core/brew`)이라 기기와 무관.
+- `svc power stayon false`로 복원(Fold8, 원래 값 0).
+- **들어 올림 자동 시작(F-B4-1) — 통과(Fold8 추가 시험, 22:18).** logcat 버퍼를 `04_device_b_F8_R1b.log`로 받음. 물체(약 246 g) 영점(`030D`) 뒤 손 압력 튐 13.3·7.1·0.2·16.7 g → −1.8 → −245.9 g. 영점 이후 `SetTimer` 송신 없음.
+
+## F-TAB 태블릿 스캔 결과 0건 (Lenovo TB-9707F, Android 12 / SDK 31, 2026-11-03)
+
+- **F-TAB-1 증상:** S2 찾기 10 s × 8회 모두 결과 0건. `dumpsys bluetooth_manager`: "Total number of results: 0", 필터 2개(ServiceUuid FFF0 / ManufacturerId 65535 data [0,1] mask [0,-1]), LOW_LATENCY. 같은 시점 OS 블루투스 설정은 `TIMEMORE_Dot`(페어링 모드)을 찾아 본딩까지 완료. Fold5(Android 16)·Fold8(Android 17)은 같은 필터로 찾음. 권한 BLUETOOTH_SCAN(neverForLocation)·CONNECT 허용, 위치 켜짐.
+- 원인 가설: 이 기기는 `mMaxScanFilters: 0`(하드웨어 오프로드 필터 미지원). 스택의 소프트웨어 필터 경로에서 결과가 누락되는 OEM 사례. 앱 로그에는 스캔 기록이 없어 직접 확인은 못 함(진단 로그 추가).
+- 수정(FIX-10, 하네스 추천(잠정) P19): 오프로드 미지원이면 처음부터 필터 없는 스캔, 지원 기기는 필터 스캔 6 s 후보 0이면 필터 없이 전환. 앱이 `isScaleCandidate`로 거름. 디버그 로그 `EV scan start filter=… offload=…`, `EV scan switch filter=off`, `EV scan stop hits=… candidates=…`.
+- **F-TAB-2:** 다른 기기에 연결돼 있으면 새 기기에서 안 보임(Fold8 Pourline이 백그라운드 자동 재연결로 저울을 잡고 있었음). S2 `ScanEmpty` 설명에 다른 휴대폰 앱·블루투스 끄기, 처음이면 페어링 모드 안내(P20).
+- 판정: **실기기 재확인 대기.** 재확인 절차: Fold8·Fold5의 Pourline과 블루투스를 끄고, TB-9707F에 새 debug APK 설치 → `adb logcat -s TimemoreBle` 켠 채 찾기 → `EV scan start filter=off offload=false`, `EV ADV <주소> …`, 후보 표시 확인. Fold5에서 `filter=on offload=true` 뒤 전환 없이 찾는지(회귀) 확인.
+
+### F-TAB 재확인 (Lenovo TB-9707F Android 12, 수정판, 2026-11-03 23:13, `04_device_b_TAB_scan2.log`)
+- `EV scan start filter=on offload=true` → 0.4 s 뒤 `EV ADV 60:D8:77:XX:XX:XX name=TIMEMORE_Dot mfr=0101 uuids=fff0` → `scan stop hits=22 candidates=1` → 연결(mtu 247), 10 Hz 수신.
+- **가설 정정:** 이 기기는 오프로드 필터를 지원한다(`offload=true`). `dumpsys`의 `mMaxScanFilters: 0`은 판단 근거가 못 됐다. 이번에는 필터 스캔으로 바로 찾았으므로 필터 없는 스캔 전환 경로는 실기기에서 실행되지 않았다(단위 테스트만).
+- 앞선 0건의 원인은 저울이 광고를 하지 않던 상태로 보는 것이 더 맞다: (1) Fold8 Pourline의 백그라운드 자동 재연결이 저울을 잡고 있었고, (2) 페어링 모드에서는 태블릿 OS 블루투스 설정이 페어링하며 연결을 잡고 있었을 수 있다. 앱 로그가 없던 시점(태블릿 `persist.log.tag=Settings`로 앱 로그가 막혀 있었음)이라 확정 불가.
+- 판정: 검색·연결 **통과**. 필터 없는 스캔 전환은 방어 코드로 유지(FIX-10, 실기기 미실행). F-TAB-2 안내 문구는 화면 미확인.

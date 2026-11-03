@@ -30,3 +30,4 @@ _workspace/04_device_b_*.log
 _workspace/04_device_b_*.csv
 _workspace/04_device_b_*_mem_*.txt
 _workspace/R1_parse.txt
+_workspace/*_parse.txt
