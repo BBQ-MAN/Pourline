@@ -2,6 +2,7 @@ package com.timemoredot.ble
 
 import android.bluetooth.BluetoothGatt
 import android.content.Context
+import com.timemoredot.protocol.BROADCAST_WHITELIST
 import com.timemoredot.protocol.CommandFailure
 import com.timemoredot.protocol.CommandResult
 import com.timemoredot.protocol.ConnectionState
@@ -16,6 +17,7 @@ import com.timemoredot.protocol.ProtocolConfig
 import com.timemoredot.protocol.ResponseKey
 import com.timemoredot.protocol.SCALE_MANUFACTURER_ID
 import com.timemoredot.protocol.SCALE_SERVICE_UUID
+import com.timemoredot.protocol.broadcastTypeOf
 import com.timemoredot.protocol.ScaleClient
 import com.timemoredot.protocol.ScaleCommand
 import com.timemoredot.protocol.ScaleDevice
@@ -135,7 +137,9 @@ class BleScaleClient internal constructor(
         data object Released : LinkEnd                    // 앱이 닫음(사용자 끊기 등)
     }
 
+    /** sentAtNanos: 쓰기 직전 시각. 그 전에 받은 같은 키 프레임은 다른 앱(central)의 응답이라 짝짓지 않는다(protocol.md 3.13 동시 연결, C-MC-1). */
     private class PendingResponse(val link: Link, val key: ResponseKey) {
+        var sentAtNanos = Long.MAX_VALUE                 // GATT 큐를 지나 실제로 쓰기 직전에 찍는다
         val frame = CompletableDeferred<ScaleFrame?>()   // null = 끊김
     }
 
@@ -238,7 +242,7 @@ class BleScaleClient internal constructor(
         val list = _scanResults.value
         val old = list.firstOrNull { it.address == hit.address }
         // 표시 이름(A-3a): 광고 이름 → 이번 스캔에서 본 이름 → 저장 주소의 last_name → null
-        val candidate = ScanCandidate(hit.address, adv.name ?: old?.name ?: savedName(hit.address), hit.rssi, clock.nowNanos())
+        val candidate = ScanCandidate(hit.address, adv.name ?: old?.name ?: savedName(hit.address), hit.rssi, clock.nowNanos(), broadcastTypeOf(adv) ?: old?.broadcastType)   // 제조사 데이터 없는 광고가 앞서 본 방송 유형을 지우지 않게
         _scanResults.value = if (old == null) list + candidate else list.map { if (it.address == hit.address) candidate else it }
     }
 
@@ -311,7 +315,7 @@ class BleScaleClient internal constructor(
                     end == LinkEnd.Permission -> { _connection.value = ConnectionState.PermissionMissing; return@launch }
                     l?.ready == true && l.powerOffAcked -> { connectIntent = false; _connection.value = ConnectionState.Idle; return@launch }   // protocol 3.5
                     l?.ready == true -> n = 1
-                    n == 0 -> { _connection.value = ConnectionState.Failed(end.toFailure()); return@launch }
+                    n == 0 -> { _connection.value = ConnectionState.Failed(end.toFailure(address)); return@launch }
                     n >= MAX_RECONNECT_ATTEMPTS -> { _connection.value = ConnectionState.Failed(FailureReason.ReconnectExhausted); return@launch }
                     else -> n++
                 }
@@ -320,13 +324,20 @@ class BleScaleClient internal constructor(
         }
     }
 
-    private fun LinkEnd.toFailure(): FailureReason = when (this) {
+    private fun LinkEnd.toFailure(address: String): FailureReason = when (this) {
         LinkEnd.Timeout -> FailureReason.ConnectTimeout
         LinkEnd.ServiceNotFound -> FailureReason.ServiceNotFound
-        is LinkEnd.Lost -> FailureReason.GattError(status)
-        is LinkEnd.OpFailed -> FailureReason.GattError(status)
+        is LinkEnd.Lost -> gattError(status, address)
+        is LinkEnd.OpFailed -> gattError(status, address)
         LinkEnd.Permission, LinkEnd.Released -> FailureReason.GattError(BluetoothGatt.GATT_FAILURE)
     }
+
+    /** F-F5-1: 133이고 이 주소의 마지막 광고가 화이트리스트 방송이면 표시한다(스캔 없이 직접 연결이면 모름 = false). */
+    private fun gattError(status: Int, address: String) = FailureReason.GattError(
+        status,
+        whitelistAdvertising = status == GATT_ERROR_133 &&
+            _scanResults.value.firstOrNull { it.address == address }?.broadcastType == BROADCAST_WHITELIST,
+    )
 
     /** transport 하나의 수명. 끝나면 항상 close()한다. */
     private suspend fun runLink(address: String): Pair<Link?, LinkEnd> {
@@ -476,9 +487,13 @@ class BleScaleClient internal constructor(
             return
         }
         val p = pending
-        if (p != null && p.link === l && p.key == frame.responseKey()) {
+        val key = frame.responseKey()
+        if (p != null && p.link === l && p.key == key && atNanos >= p.sentAtNanos) {
             pending = null
             p.frame.complete(frame)
+        } else if (key != null) {
+            // 요청과 짝이 없는 응답: 다른 앱이 같은 저울에 붙어 있거나 시간 초과 뒤 늦게 온 응답. 상태(Read 값)는 저울의 실제 값이라 그대로 반영한다
+            log { FrameLogFormat.ev("짝 없는 응답 $frame") }
         }
         reducer.onFrame(frame, atNanos)?.let { _readings.tryEmit(it) }
         _status.value = reducer.status
@@ -505,7 +520,10 @@ class BleScaleClient internal constructor(
         try {
             log { FrameLogFormat.tx(bytes) }
             // 로컬 쓰기 완료(onCharacteristicWrite)는 큐 진행에만 쓰고 성공으로 보지 않는다(G-5)
-            val written = l.gatt { writeNoResponse(SCALE_SERVICE_UUID, GattSpec.DOWNLINK, bytes) } == true
+            val written = l.gatt {
+                p.sentAtNanos = clock.nowNanos()
+                writeNoResponse(SCALE_SERVICE_UUID, GattSpec.DOWNLINK, bytes)
+            } == true
             val result = when {
                 !written -> CommandResult.Failed(if (l.end.isCompleted) CommandFailure.Disconnected else CommandFailure.NotConnected)
                 else -> {
@@ -548,6 +566,7 @@ class BleScaleClient internal constructor(
         const val SCAN_RESTART_GAP_NANOS = 6_000_000_000L
         const val NANOS_PER_MS = 1_000_000L
         const val MAX_RECONNECT_ATTEMPTS = 10
+        const val GATT_ERROR_133 = 133
         val BACKOFF_MS = longArrayOf(1_000, 2_000, 4_000, 8_000, 16_000, 30_000)   // 7회째부터 30 s
     }
 }

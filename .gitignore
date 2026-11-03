@@ -23,3 +23,10 @@ _workspace/build/
 _workspace/motion/**/assets/fonts/
 # TIMEMORE 프로토콜 원문 사본: 원 저장소에 라이선스 표기가 없어 재배포하지 않는다(README의 원문 링크 참조)
 docs/protocol/source/
+
+# 실기기 원본 증거는 로컬 보관(폰 화면·원시 logcat·내보낸 CSV·메모리 측정) — 요약은 _workspace/04_device_results.md
+_workspace/04_device_shots/
+_workspace/04_device_b_*.log
+_workspace/04_device_b_*.csv
+_workspace/04_device_b_*_mem_*.txt
+_workspace/R1_parse.txt

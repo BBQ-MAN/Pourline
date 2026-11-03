@@ -69,7 +69,8 @@
 | C-06-3 | 버튼으로 단위를 바꿀 수 없어 버튼에 의한 0x06 Notify는 오지 않는다 | 해당 없음(v1.0.4) | 결과 "버튼", log:10766("0x02/0x06 Notify 없음") | — |
 | C-0B-1 | 0x0B 전원 끄기 W, payload 없음 | 확정(형식) | 원문 §4 L96, §5.5 L227-241. 실기기 미송신 | 실행하면 저울이 꺼진다 |
 | C-0B-2 | 전원 버튼으로 끄면 Notify 없이 약 2.1~2.2 s 뒤 central이 연결 끊김을 감지한다(macOS bleak, CoreBluetooth 감독 시간 기준) | 확정(macOS) | 마지막 RX → 끊김: log:6736-6737(2.08 s), log:10765-10766(2.25 s). 저울이 링크를 정상 종료하는지는 로그로 알 수 없어, 감지 시간은 central의 supervision timeout에 달릴 수 있다 | Android는 C-0B-2a |
-| C-0B-2a | Android에서 전원 버튼 → 연결 끊김 감지 시간 | 미확정 | Android 측정 없음. C-0B-2는 macOS 값이다 | 프로브 B6: 연결 중 전원 버튼을 누르고 logcat에서 마지막 Notify → `onConnectionStateChange(DISCONNECTED)` 간격과 status 코드를 3회 이상 기록 |
+| C-0B-2a | Android에서 전원 버튼 → 연결 끊김 감지 시간: 마지막 Notify → `onConnectionStateChange(DISCONNECTED, status 8 = 연결 시간 초과)` 2.00 s | 확정(Android 17 Fold8, 1회 측정) | `_workspace/04_device_b_B6.log` 마지막 RX +78.78 s → `connected=false status=8` +80.79 s. architecture 7.2 규칙(최댓값 + 0.5 s = 2.5 s < `noDataTimeoutNanos` 3 s)으로 FIX 불필요 | 다른 휴대폰에서 추가 측정하면 최댓값을 갱신한다 |
+| C-MC-1 | 저울은 central 두 개의 동시 연결을 받고, FFF1 알림(무게·Notify·다른 central이 보낸 요청의 응답까지)을 연결된 모두에게 보낸다. 다른 central의 명령(예: 영점)도 저울에 그대로 적용된다 | 확정(v1.0.4, 1회 관찰: Pourline + 공식 TIMEMORE 앱) | `_workspace/04_device_b_B4.log` +192~204 s: 공식 앱의 Read 응답 opcode `02` cmd `08`·`18`·`0C`·`13`·`04`·`02`·`05`, Write 응답 `03 06`·`03 0D`가 Pourline의 FFF1로 옴. +204.2 s 공식 앱 영점 응답 뒤 무게 0 | 3.13 |
 | C-0C-1 | 0x0C 이름 R/W, UTF-8 1~16바이트 | 확정(형식) | 원문 §4 L97, §5.6 L245-273. Read 응답 실측 log:3623(`TIMEMORE_Dot`, length 12). Write 미송신 | — |
 | C-0C-2 | 앱 쪽 이름 자르기 규칙(16바이트 초과 시 UTF-8 글자 경계에서 자름). 예시 계산은 확정 | 미확정(앱 규칙) | 원문은 상한만 적음(§4 L97, §5.6 L245, L267) | 해당 없음(앱 규칙) |
 | C-0C-3 | 이름 읽기 응답 n의 최대값 | 미확정(16 가정) | 원문 §5.6 L245 "Up to 16 bytes", §4 L97. 관찰 n = 12(log:3623) | 16바이트 이름을 쓴 뒤 다시 읽기 |
@@ -82,12 +83,13 @@
 | C-W-1a | `00`/`01` 외 Write 응답 payload는 실패로 본다 | 미확정(앱 규칙) | 원문은 `00`/`01`만 정의. 실측은 `01`만 관찰 | 해당 없음(앱 규칙) |
 | C-W-2 | Write·Read 응답 시간 제한 1000 ms, 넘으면 Timeout, 재시도 없음 | 확정(앱 규칙, 실측 근거) | 실측 응답 시간 128~304 ms(15건: log:2102→2104 … log:3973→3975, log:13751→13753). 응답은 무게 알림 뒤에 붙어 온다 | — |
 | C-W-2a | 시간 제한 뒤 영점(0x0D)만 사용자 동작으로 다시 보낼 수 있다 | 미확정(앱 규칙) | 원문 언급 없음. 앱 설계 결정 | 해당 없음(앱 규칙) |
-| A-1 | Manufacturer Data: 회사 ID `0xFFFF`, 값 2바이트 [방송 유형][기기 유형]. 방송 유형 `01` 화이트리스트 / `02` 일반, 기기 유형 `01` = DOT TES017. Android `getManufacturerSpecificData(0xFFFF)`가 이 2바이트를 준다는 것은 미확정(macOS bleak 관찰에서 추론) | 확정(값·바이트 위치). Android API 반환은 미확정 | 원문 §2.1 L25-31(방송·기기 유형). 회사 ID는 로그만 근거: log:1(`'0xFFFF': '0201'`), log:6738·log:10769(`'0101'`) | 프로브 B: Android 스캔에서 `getManufacturerSpecificData(0xFFFF)` 값을 logcat에 남긴다 |
+| A-1 | Manufacturer Data: 회사 ID `0xFFFF`, 값 2바이트 [방송 유형][기기 유형]. 방송 유형 `01` 화이트리스트 / `02` 일반, 기기 유형 `01` = DOT TES017. Android `getManufacturerSpecificData(0xFFFF)`가 이 2바이트를 그대로 준다 | 확정(값·바이트 위치, Android API 반환 포함) | 원문 §2.1 L25-31(방송·기기 유형). 회사 ID는 로그만 근거: log:1(`'0xFFFF': '0201'`), log:6738·log:10769(`'0101'`). Android: `_workspace/04_device_b_B1.log` `EV ADV ... mfr=0101`(Fold8 Android 17), `04_device_b_F5_B1_B10.log`(Fold5 Android 16) 같음 | — |
 | A-2 | 서비스 UUID 0xFFF0을 광고한다. 이름 `TIMEMORE_Dot`은 일반 방송(`02`)에만 있고, 전원을 다시 켠 뒤 화이트리스트 방송(`01`)에는 이름이 없다 | 확정, 충돌(원문 §2.1 L33-35 "Scan response includes device name") | log:1(name `TIMEMORE_Dot`), log:6738·log:10769(name None) | — |
 | A-3 | 스캔 필터 규칙(4절): 서비스 UUID 0xFFF0 또는 Manufacturer Data 회사 ID 0xFFFF(기기 유형 `01`). 이름으로 거르지 않는다 | 확정(앱 규칙, 실측 근거) | A-1, A-2 | 프로브 B: Android `ScanFilter`로 두 방송 유형 모두 잡히는지 확인 |
 | A-3a | 광고에 이름이 없으면(화이트리스트 방송, A-2) 앱이 표시 이름을 정한다 | 미확정(앱 규칙) | 원문 언급 없음. 이름 없는 방송은 log:6738·log:10769 | 해당 없음(앱 규칙) |
 | A-4 | 연결 후 0x2A24 = `TES017` 확인, 다르면 경고만 하고 연결 유지 | 미확정(앱 규칙, `TES017` 값은 G-3 확정) | 원문 §2.3 L53은 값만 적음. 불일치 처리는 원문 없음 | 해당 없음(앱 규칙) |
-| A-5 | 화이트리스트 방송(`01`) 중 이전에 연결하지 않은 다른 휴대폰이 연결할 수 있는지 | 미확정 | 원문 §2.1 L27은 이름만 적음. 실측은 같은 Mac에서만 재연결(log:6739, log:10770) | 다른 휴대폰으로 전원 재투입 후 연결 시도 |
+| A-5 | 화이트리스트 방송(`01`) 중에는 처음 보는 휴대폰의 연결을 GATT status 133으로 거절하는 것으로 보인다. 저울을 끈 뒤 버튼을 길게 눌러 페어링 모드로 켜면 연결된다. 이미 연결한 적 있는 휴대폰은 `01`에서도 붙는다 | 관찰(1회, Fold5 Android 16). 페어링 모드에서 광고 값[0]이 `02`로 바뀌는지는 미확인 | `_workspace/04_device_b_F5_B1_B10.log` 첫 연결 133 7회 → 사용자가 페어링 모드로 켬 → 연결. Fold8(전에 붙은 휴대폰)은 `01`에서 연결(B1) | 새 휴대폰에서 페어링 모드 진입 뒤 `EV ADV ... mfr=02xx`가 오는지 logcat 확인 |
+| D-1 | Dot에는 숫자 화면이 없다. 무게·타이머는 앱에서만 보인다 | 확정(사용자 확인, 2026-11-03) | 프로브 B 중 사용자 확인 | — |
 | GATT-1 | 연결 순서(1절, 앱 규칙). 0x06 → 0x05 → 0x02 Read. 0x02 Read 응답은 상태 맞추기에만 쓰고 타이머 이벤트로 보지 않는다 | 확정(앱 규칙, 각 Read 응답 실측) | 원문에 순서 없음. Read 응답(opcode `02`)과 Notify(opcode `01`) 구분은 F-5·C-02-1. 실측 Read 응답 log:3589/3607/3658 | — |
 
 ## 1. GATT
@@ -250,7 +252,7 @@ unitRaw: `00` g, `01` oz (C-06-1). 그 밖의 값은 단위 미상으로 두고 
 
 App→scale: opcode `03`, length 0 → `A55A030B00000000`. 응답: opcode `03`, length 1, `00`/`01` (C-0B-1). 실기기에 보낸 적 없다. 성공 후 연결이 끊기는 것은 정상이다. 앱은 이 끊김을 재연결 대상으로 보지 않는다.
 
-전원 버튼으로 끄면 Notify 없이 약 2.1~2.2 s 뒤 연결 끊김이 감지된다(C-0B-2, macOS 측정). Android 감지 시간은 미확정이다(C-0B-2a, 프로브 B6). 앱은 이를 일반 연결 끊김과 구별할 수 없다.
+전원 버튼으로 끄면 Notify 없이 약 2.1~2.2 s 뒤 연결 끊김이 감지된다(C-0B-2, macOS 측정). Android(Fold8, Android 17)에서는 2.00 s, status 8이었다(C-0B-2a, 프로브 B6). 앱은 이를 일반 연결 끊김과 구별할 수 없다.
 
 ### 3.6 0x0C 기기 이름 (R/W)
 
@@ -319,17 +321,25 @@ opcode `01`, cmd `04`, length `0x0005`, payload 5바이트 (C-04-1). 예: `A55A0
 - 의미는 미확정이다. 앱은 이 프레임으로 상태를 바꾸지 않고 `Unknown`으로 버린다(2.3 규칙 8).
 - 0x04는 원문 §4 명령표(L90-101)에 없다.
 
+### 3.13 다른 앱과 동시 연결 (C-MC-1)
+
+- 저울은 central 두 개의 동시 연결을 받고 FFF1 알림을 모두에게 보낸다. 그래서 다른 앱이 보낸 요청의 응답(opcode `02`·`03`)도 Pourline에 온다. 응답에는 요청 식별자가 없어 누가 보낸 요청의 응답인지 프레임만으로는 완전히 가릴 수 없다.
+- 관찰한 다른 앱(공식 TIMEMORE 앱) 응답: `02 08` payload `0201`, `02 18` `01`, `02 0C` `TIMEMORE_Dot`, `02 13` `544553303137`("TES017", 모델명), `02 04` `0100000000`, `02 02` `01`, `02 05` `0364`, `03 06` `01`, `03 0D` `01`. cmd `0x08`·`0x18`·`0x13`과 Read `0x04`는 원문 명령표에 없다(의미 미확정, 앱은 `Unknown`으로 버린다).
+- 앱 규칙(하네스 추천(잠정), 2026-11-03): (1) 요청-응답 짝짓기는 같은 (opcode, cmd) 키이면서 **요청을 쓰기 직전 시각 이후에 받은 프레임**만 받는다. 그 전에 받은 같은 키 프레임(다른 앱의 응답)은 짝짓지 않는다. (2) 대기 중인 요청과 짝이 없는 응답은 디버그 로그에 "짝 없는 응답"으로만 남긴다. Read 응답 값(배터리·단위·타이머)은 저울의 실제 상태라 그대로 상태에 반영한다. (3) 화면 안내는 두지 않는다(architecture 5.4).
+- 남는 한계: 요청을 쓴 뒤 응답이 오기 전(실측 128~304 ms, C-W-2)에 다른 앱의 같은 키 응답이 먼저 오면 그것을 자기 응답으로 받는다. Read는 값이 저울의 실제 상태라 결과가 같다. Write 응답은 성공 여부만 담아 다른 앱의 같은 명령(예: 같은 때 영점)을 성공으로 받을 수 있다. 두 앱이 300 ms 안에 같은 명령을 보내야 생기는 일이라 받아들인다.
+
 ## 4. 광고와 기기 식별
 
 | ID | 규칙 | 상태 |
 |----|------|------|
 | A-1 | Manufacturer Data: 회사 ID `0xFFFF`, 값 2바이트. 값[0] = 방송 유형(`01` 화이트리스트 / `02` 일반), 값[1] = 기기 유형(`01` DOT TES017) | 확정 |
-| A-1 | Android `ScanRecord.getManufacturerSpecificData(0xFFFF)`가 이 2바이트를 준다 | 미확정(macOS bleak 관찰과 AOSP 파싱 방식에서 추론). 프로브 B에서 logcat으로 확인 |
+| A-1 | Android `ScanRecord.getManufacturerSpecificData(0xFFFF)`가 이 2바이트를 준다 | 확정(프로브 B, Android 16·17: `01 01`) |
 | A-2 | 서비스 UUID 0xFFF0 광고. 기기 이름 `TIMEMORE_Dot`은 일반 방송(`02`)에만 있다. 전원을 다시 켠 뒤 화이트리스트 방송(`01`)에서는 이름이 없다 | 확정, 원문 §2.1 L33-35와 충돌 |
 | A-3 | 스캔 필터 규칙(앱): `ScanFilter` 두 개(OR). (a) 서비스 UUID `0000fff0-0000-1000-8000-00805f9b34fb`, (b) Manufacturer Data 회사 ID `0xFFFF`, data `[00, 01]` mask `[00, FF]`(기기 유형 `01`). 기기 이름으로 거르지 않는다 | 확정(앱 규칙, 실측 근거) |
 | A-3a | 이름이 없으면 앱이 표시 이름을 정한다 | 미확정(앱 규칙) |
 | A-4 | 연결 후 확인(앱): 0x2A24가 `TES017`이면 Dot으로 확정한다. 다르면 경고만 하고 연결은 유지한다 | 미확정(앱 규칙, `TES017` 값은 G-3 확정) |
-| A-5 | 화이트리스트 방송 중 다른 휴대폰의 연결 가능 여부 | 미확정 |
+| A-5 | 화이트리스트 방송(`01`) 중 처음 보는 휴대폰은 GATT 133으로 거절되는 것으로 보인다. 페어링 모드(전원을 끈 뒤 버튼 길게)로 켜면 연결된다. 앱 규칙: 첫 연결이 133으로 실패하고 그 저울의 마지막 광고 값[0]이 `01`이면 페어링 모드 안내를 보인다(단정하지 않는 문구, architecture 9.2) | 관찰(1회). 앱 규칙은 하네스 추천(잠정) |
+| A-6 | Android에서는 화이트리스트 방송(`01`)에도 이름 `TIMEMORE_Dot`이 붙어 왔다(macOS 프로브 A에서는 일반 방송에만). 앱은 이름으로 거르지 않으므로 영향 없음 | 관찰(B1, Fold8) |
 
 - 0xFFF0과 회사 ID 0xFFFF는 Timemore 전용 값이 아닐 수 있다(미확정, 원문·로그 근거 없음). 일반 지식으로는 0xFFFF가 Bluetooth SIG Assigned Numbers에서 회사 ID 할당 전 시험용으로 쓸 수 있는 값이고, 0xFFF0은 범용 BLE 모듈 예제 프로필이 흔히 쓴다. 확인 방법: Bluetooth SIG Assigned Numbers(Company Identifiers 각주)를 근거로 붙인다. 어느 쪽이든 A-3은 후보만 고르고, Dot 확정은 A-4가 한다.
 - 이름으로 거르면 전원을 다시 켠 뒤 재연결에서 저울을 놓친다(A-2, log:6738).
@@ -355,14 +365,4 @@ opcode `01`, cmd `04`, length `0x0005`, payload 5바이트 (C-04-1). 예: `A55A0
 | 2026-10-29 | 0, 3.2, 3.5 | C-0B-2 상태를 확정 → 확정(macOS)로 한정(감지 시간은 macOS CoreBluetooth 감독 시간 기준). Android 감지 시간을 C-0B-2a(미확정, 프로브 B6)로 분리. C-02-2·3.5 문장에 macOS 측정 표기. 벡터 변경 없음 | `_workspace/02_design_followup2.md` p7(protocol), log:6736-6737, log:10765-10766 |
 | 2026-10-29 | 0, 2.4, 3.7, 부록 | C-0D-2 추가(확정(macOS, v1.0.4, 2회 관찰)): 0x0D 성공 응답 뒤 약 300 ms(무게 알림 2개) 동안 영점 전 무게가 온다. 2.4의 'MTU 증가 뒤 나눠 쓰기' 문장을 앱 규칙에서 빼고 '원문·실측 미확정, 앱은 `PayloadTooLarge`로 거부(architecture.md 4.1)'로 고침. 벡터 `rx-tare-preweight-seq-001`(origin device) 추가, 부록의 배열 `hex` 뜻을 '알림 순서열'로 넓힘. 기존 벡터 변경 없음 | `_workspace/02_design_followup3.md` p1·p2, log:2723-2729, log:13751-13756 |
 | 2026-10-30 | 3.1 | C-01-14 추가(미확정): 저울 최대 측정 범위(용량). ui-design 4.2 표시 범위 ±9999.9 g과 묶이지 않음을 적음. 벡터 변경 없음 | design-review wf_c0c42c6a-ba7 protocolIssues(코디네이터) |
-
-## 부록: 벡터 파일 키 (`protocol-vectors.json`)
-
-- 최상위: `source`, `crc`, `vectors`.
-- `crc` 블록(2026-10-28 프로브 A 반영으로 키 변경): `variant`(`"NONE"`), `rxCheck`(`false`, 수신 CRC 검사 안 함), `txValue`(`"0x0000"`), `byteOrder`, `range`, `status`, `firmware`(`"v1.0.4"`), `note`, `originalStated`(원문 기재 CRC: `name`, `poly`, `init`). 이전 키 `poly`·`init`·`refin`·`refout`·`xorout`는 최상위에서 뺐다.
-- 상태: 모든 rx 벡터는 `confirmed`(CRC 미검사로 CRC 변형 의존이 사라졌다). 실기기에 보낸 바이트와 같은 tx 벡터 9건은 `origin: "device"`, `confirmed`. 실기기에 보내지 않은 tx(0x06 W, 0x0B, 0x0C W, 0x19, 0x1A)는 `unconfirmed`. `tx-name-write-empty-001`(프레임 없음)은 `confirmed`.
-- 벡터 공통: `id`, `direction`(`rx`/`tx`), `hex`(문자열, 알림 여러 개(분할 또는 연속 알림 순서열)면 받은 순서대로 문자열 배열, 오류 기대 tx는 `null`), `origin`(`derived`/`device`), `status`(`confirmed`/`unconfirmed`), 선택 `evidence`(device 벡터의 로그 파일:줄).
-- 모든 벡터의 CRC 자리는 `0000`이다. 예외: `rx-crc-bad-001`은 CRC `4106`을 그대로 두고 `WeightReport`를 기대한다. 수신 CRC를 검사하지 않는지 확인하는 벡터다.
-- rx: `expect`는 객체 하나. 한 입력에서 프레임이 둘 이상 나오면 객체 배열. `unitContext`(`g`/`oz`)는 0x01 디코딩 당시의 현재 단위이며 raw 디코딩에는 영향이 없다.
-- rx `expect.type`: `WeightReport{weightRaw, flowRaw, timerSec, overload}`, `TimerState{op, stateRaw}`, `Battery{op, bars, percent}`, `Unit{op, unitRaw}`, `WriteAck{cmd, success}`, `DeviceName{name}`, `FirmwareVersion{version}`, `Unknown{opcode, cmd, payloadHex}`. `op`는 `notify`/`read`. `payloadHex`는 대문자 hex. 오류는 `{error: "LengthMismatch", cmd, expectedLen, actualLen}`. `CrcMismatch`는 더 이상 기대하지 않는다.
-- tx `command.type`: `ReadTimer`, `SetTimer{action: start|pause|reset}`, `ReadBattery`, `ReadUnit`, `SetUnit{unit: g|oz}`, `PowerOff`, `ReadName`, `SetName{name}`, `Tare`, `ReadFirmware`, `FactoryReset`, `ForgetDevice`. 오류 기대 tx는 `expect: {error: "InvalidName"}`.
+| 2026-11-03 | 0, 3.13, 4 | 프로브 B 확정 사실 반영: A-1 Android API 반환 확정(Android 16·17 `01 01`), C-0B-2a Android 끊김 감지 2.00 s(status 8, 1회), C-MC-1·3.13 동시 연결(다른 앱 응답이 FFF1로 옴, 짝짓기 앱 규칙), A-5 화이트리스트 방송은 처음 보는 휴대폰을 133으로 거절하고 페어링 모드로 연결됨(관찰 1회), A-6 Android에서는 `01` 방송에도 이름, D-1 숫자 화면 없음. 벡터 변경 없음(시계열 벡터는 엔진 테스트 `AutoStartConfirmTest`에 둠) | `_workspace/04_device_results.md`, `04_device_b_B1.log`·`B4.log`·`B6.log`·`F5_B1_B10.log` |

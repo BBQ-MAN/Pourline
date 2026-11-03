@@ -38,6 +38,33 @@ class BleCommandTest {
         assertEquals(CommandResult.Success, r.await())
     }
 
+    /** 프로브 B(04_device_b_B4.log +192~204 s): 다른 앱(공식 앱)이 같은 저울에 붙으면 그 앱의 응답도 FFF1로 온다.
+     *  쓰기 전에 받은 같은 키 응답은 짝짓지 않고, 요청이 없을 때 온 응답은 "짝 없는 응답"으로 기록만 한다. */
+    @Test fun foreignResponseReceivedBeforeWriteIsNotPaired() = runTest {
+        val h = Harness(this)
+        val t = h.connectA()
+        h.advance(100)
+        val r = async { h.client.send(ScaleCommand.Tare) }
+        runCurrent()
+        t.notifyAt(tareAck, h.clock.nowNanos() - 50 * MS)   // 다른 앱의 영점 응답(쓰기 50 ms 전 수신)
+        runCurrent()
+        assertFalse(r.isCompleted)
+        assertTrue(h.logs.any { it.contains("짝 없는 응답 WriteAck(cmd=13") })
+        t.notify(tareAck)
+        runCurrent()
+        assertEquals(CommandResult.Success, r.await())
+    }
+
+    @Test fun unsolicitedResponseIsLoggedAndReadValueStillApplies() = runTest {
+        val h = Harness(this)
+        val t = h.connectA()
+        t.notify("A55A0205000203640000")   // 다른 앱의 배터리 읽기 응답(B4 +192.355 s): 3칸 100%
+        runCurrent()
+        assertTrue(h.logs.any { it.contains("짝 없는 응답 Battery") })
+        assertEquals(100, h.client.status.value.batteryPercent)
+        assertTrue(h.state is ConnectionState.Connected)
+    }
+
     @Test fun tareRejected() = runTest {
         val h = Harness(this)
         val t = h.connectA()

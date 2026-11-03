@@ -11,7 +11,7 @@
 | 프로토콜 항목 | 화면 규칙 |
 |---------------|-----------|
 | C-01-3 g 0.1 확정, C-01-4 oz 0.01 미확정 | g는 소수 1자리, oz는 소수 2자리로 고정 표시. oz 배율이 바뀌어도 자릿수 규칙만 상수로 바꾼다 |
-| C-01-5 유량 0.1 g/s, 0~999, C-01-7 음수 없음 | 유량은 소수 1자리 g/s. 실측에 음수는 없지만 오면 `0.0`으로 표시(앱 방어 규칙). 무게가 줄어도 유량이 0이 아닐 수 있다(직전 1초 순증가, C-01-7). 화면 문구·낭독은 "무게 감소 = 유량 0"을 전제하지 않는다 |
+| C-01-5 유량 0.1 g/s, 0~999, C-01-7 음수 없음 | 유량은 소수 1자리 g/s. 실측에 음수는 없지만 오면 `0.0`으로 표시(앱 방어 규칙). 무게가 줄어도 유량이 0이 아닐 수 있다(직전 1초 순증가, C-01-7). 화면 문구·낭독은 "무게 감소 = 유량 0"을 전제하지 않는다(급감 때 엔진이 평균 창을 비우는 것은 architecture 7.2) |
 | C-01-8 저울 타이머 1 s 해상도 | 화면 타이머는 앱 단조 시계로 만든 값(앱 계산 값). 저울 타이머 raw를 직접 표시하지 않는다 |
 | C-01-10/11 과부하 | 과부하 동안 무게 필드를 표시하지 않는다. 과부하 직전 마지막 정상 값을 "멈춘 값"으로 표시(D11) |
 | C-01-12 "active" 정의 미확정 | 연결 중 0x01이 3000 ms 넘게 오지 않으면 `NoData`(앱 계산 값, 판단 주체: 추출 엔진 1 s `Tick`, architecture 7.2 `noDataTimeoutNanos`. 최대 1 s 늦게 표시). 실측 최대 공백 243 ms(C-01-12), 전원 버튼 끊김 감지 2.08~2.25 s(C-0B-2)보다 길게 잡아 끊김 직전 `NoData`가 먼저 뜨지 않게 한다 |
@@ -338,7 +338,7 @@ S10: `TopAppBar`(날짜, 동작 "CSV 내보내기", overflow "삭제"). 지표 3
 라벨(`labelMedium`, onSurfaceVariant) 위, 값(`AppType.metricValue` 36 sp tnum) 아래. 값 `maxLines = 1`, 크기는 4.2와 같은 방식(후보 크기마다 기준 문자열을 다시 잰다)으로 기준 문자열(타이머 `88:88.8`, 유량 `888.8`)에 맞춰 20~36 sp에서 고른다. 넓은 창 왼쪽 칸(3.2)에서는 상한이 24 sp라 20~24 sp에서 고른다. 밸브 칸 유무와 관계없이 같다(근거 D1 무게 우선 위계, 3.2. 2026-11-02 사용자 결정). 줄 높이는 글자 크기에 비례한다: `lineHeight = (44f / 36f).em`(1.22 em)으로 두고 `copy(fontSize = 고른 크기)`만 바꾼다(36 sp면 44 dp, 24 sp면 약 29 dp. 줄인 크기에 sp 줄 높이 44를 남기지 않는다. 4.2 무게 줄 높이와 같은 방식). 정렬도 4.2와 같다: 유량 값은 `888.8` 기준 폭의 고정 너비 상자에 `TextAlign.End`(`9.9` → `10.0`에서 소수점 고정), 타이머는 길이가 고정이라 `TextAlign.Start`. 칸 높이는 고정하지 않는다(라벨 + 값 내용 높이).
 
 - 타이머: 라벨 "시간", 값 `02:35.4`. `Paused`이면 라벨 옆 `pause` 아이콘 16 dp + "멈춤".
-- 유량: 라벨 "유량 g/s"(oz면 "유량 oz/s"), 값 `4.2`. 멈춘 상태에서는 `—` 표시(유량은 멈춘 값을 보여 주지 않는다. 마지막 유량은 오해 소지가 커서). 값은 엔진 평활값(저울 유량의 1 s 평균, architecture 7.2)을 그대로 보인다. 무게가 줄어드는 동안에도 0보다 클 수 있고(protocol C-01-7), 화면은 이를 0으로 바꾸지 않는다. 컵을 올리거나 다시 놓으면 저울 유량이 1 s 동안 최대 99.9 g/s가 되고 평균에도 그대로 들어간다(앱에 "컵 들면 0" 규칙 없음, architecture 7.2). 지표 숫자는 그 값을 그대로 보인다(기준 문자열 `888.8`이라 폭이 넘치지 않는다). 그래프 처리는 4.4.
+- 유량: 라벨 "유량 g/s"(oz면 "유량 oz/s"), 값 `4.2`. 멈춘 상태에서는 `—` 표시(유량은 멈춘 값을 보여 주지 않는다. 마지막 유량은 오해 소지가 커서). 값은 엔진 평활값(저울 유량의 1 s 평균, architecture 7.2)을 그대로 보인다. 무게가 천천히 줄어드는 동안에도 0보다 클 수 있고(protocol C-01-7), 화면은 이를 0으로 바꾸지 않는다. 컵을 올리거나 다시 놓으면 저울 유량이 1 s 동안 최대 99.9 g/s가 되고 평균에도 그대로 들어간다. 단, 컵·서버를 들어 올려 무게가 한 샘플에 2 g 넘게 줄면 엔진이 평균 창을 비워 들기 직전 손 압력의 유량이 남지 않는다(architecture 7.2 유량 급감 규칙, 2026-11-03 프로브 B O-B8-1: 서버를 들어 −245.9 g인데 20.6 g/s가 보였다). 지표 숫자는 그 값을 그대로 보인다(기준 문자열 `888.8`이라 폭이 넘치지 않는다). 그래프 처리는 4.4.
 
 ### 4.4 리본 그래프 `BrewChart`(시안 B)
 
@@ -598,6 +598,7 @@ S1 `Idle`·`WaitingForPour`에서는 이 그래프 대신 서버(4.10)를 그린
 | `Connected` + `ModelMismatch`(A-4. DIS 0x2A24 읽기가 끝나 갱신된 `Connected`가 온 뒤에만 판정, 읽는 중에는 띄우지 않는다. architecture 6절) | 실시간 | 정보 배너 "이 기기는 TIMEMORE Dot(TES017)이 아닐 수 있습니다. 무게가 이상하면 연결을 끊으세요." | "확인"(이 기기에 대해 다시 안 띄움), "연결 끊기" | 없음(배너로 표시) |
 | `Reconnecting(attempt, nextRetryAtNanos)` | 멈춘 값 · 연결 끊김 · N초 전 | 진행 배너 "연결이 끊겨 다시 연결하는 중입니다(3/10회, 4초 후). 저울 버튼을 눌렀다면 저울이 꺼진 것이니 다시 켜 주세요. 추출 중이면 타이머는 계속 갑니다."(전원 버튼 끔은 일반 끊김과 구별되지 않는다, 2.2·protocol C-0B-2. 이 문구는 끊김 원인과 관계없이 늘 넣는다). 남은 초가 0 이하이면(백오프가 끝나 연결을 시도하는 중, 상태는 `Reconnecting` 유지, 10.1) 괄호를 "(3/10회, 지금 연결하는 중)"으로 바꾼다. 0초·음수 초를 보이지 않는다. 7a 문구(`WaitingForPour`·`Running`·`Paused`, 3.1 아래 배너): 첫 문장과 회차만 "연결이 끊겨 다시 연결하는 중입니다(3/10회, 4초 후)."(전원 버튼 안내·타이머 문장은 위 배너(3)·S3 시트 상태 문구에만 둔다. 7a에서 배너 동작이 첫 화면에 보이도록 길이를 줄인다) | "지금 다시 시도", "연결 끊기" | Polite "연결 끊김, 다시 연결하는 중"(처음 한 번. 회차마다 읽지 않음), 복구 시 Polite "다시 연결됨" |
 | `Failed(ConnectFailed)`(첫 연결 실패, 재연결 10회 실패 포함) | `Running`·`Paused`면 멈춘 값 · 연결 끊김, 아니면 `--.-`(엔진에 다른 저울·이전 연결의 무게가 남아 있어도 다시 띄우지 않는다. architecture 9.3 매핑 1번, 10.2) | 오류 배너 "저울에 연결하지 못했습니다. 저울을 켜고 가까이 둔 뒤 다시 시도하세요." | "다시 시도", "다른 저울 찾기". `Running`·`Paused`·`Finished`에서는 "다른 저울 찾기"를 비활성(`enabled = false`, `stateDescription` "추출 중에는 바꿀 수 없음", 3.8, `canFindOtherScale`) | Polite. `Running`·`Paused` 중이면 Assertive "다시 연결하지 못했습니다. 무게를 받을 수 없습니다" |
+| `Failed(PairingModeMaybe)`(첫 연결이 GATT 133으로 실패하고 그 저울의 마지막 광고가 화이트리스트 방송 `01`, architecture 5.4·9.2, protocol A-5) | `Failed(ConnectFailed)` 행과 같음 | 오류 배너 "저울에 연결하지 못했습니다. 이 휴대폰으로 처음 연결한다면 저울을 끈 뒤 버튼을 길게 눌러 페어링 모드로 켜고 다시 시도하세요." 133은 다른 이유일 수도 있어 조건("처음 연결한다면")을 달고 단정하지 않는다. S2 배너·S3 상태 줄도 같은 문구(`failureText`) | `Failed(ConnectFailed)` 행과 같음 | Polite "연결 실패, 페어링 모드가 필요할 수 있음"(S2는 "연결 실패, 연결하지 못함, 페어링 모드가 필요할 수 있음") |
 | `Failed(ServiceNotFound)` | `Running`·`Paused`면 멈춘 값 · 연결 끊김, 아니면 `--.-`(`Failed(ConnectFailed)` 행과 같음) | 오류 배너 "이 기기에서 저울 서비스를 찾지 못했습니다. 다른 기기일 수 있습니다." | "다른 저울 찾기". `Running`·`Paused`·`Finished`에서는 "다른 저울 찾기"를 비활성(`enabled = false`, `stateDescription` "추출 중에는 바꿀 수 없음", 3.8, `canFindOtherScale`). 그때는 "다시 시도"를 함께 두고 동작 줄(일시정지·완료)은 그대로 쓴다 | Polite. `Running`·`Paused` 중이면 Assertive(`ConnectFailed`와 같은 문구) |
 | `Failed(Timeout)`(앱 시작 때 저울이 꺼져 있는 흔한 경우 포함) | `Running`·`Paused`면 멈춘 값 · 연결 끊김, 아니면 `--.-`(`Failed(ConnectFailed)` 행과 같음) | 오류 배너 "연결 응답이 없습니다. 저울이 켜져 있는지 확인하세요." | "다시 시도", "다른 저울 찾기". `Running`·`Paused`·`Finished`에서는 "다른 저울 찾기"를 비활성(`enabled = false`, `stateDescription` "추출 중에는 바꿀 수 없음", 3.8, `canFindOtherScale`) | Polite. `Running`·`Paused` 중이면 Assertive(`ConnectFailed`와 같은 문구) |
 
@@ -1202,7 +1203,7 @@ S1 알림:
 | 연결됨 / 다시 연결됨 | Polite | "저울 연결됨" / "다시 연결됨" | `Connected` / `Reconnected` |
 | 연결 끊김(재연결 시작, 처음 한 번) | Polite | "연결 끊김, 다시 연결하는 중" | `ReconnectStarted` |
 | 연결 끊김(`Idle`·`WaitingForPour`, 사용자 끊음·0x0B 전원 끄기 뒤. 앱 시작 때는 없음) | Polite | "저울 연결 끊김" | `Disconnected` |
-| 연결 실패(`Idle`·`WaitingForPour`) | Polite | "연결 실패" + 이유 한 마디("응답 없음", "저울 서비스 없음". 이유는 `uiState.connection`의 `Failed(reason)`에서 고른다) | `ConnectFailed` |
+| 연결 실패(`Idle`·`WaitingForPour`) | Polite | "연결 실패" + 이유 한 마디("응답 없음", "저울 서비스 없음", "페어링 모드가 필요할 수 있음". 이유는 `uiState.connection`의 `Failed(reason)`에서 고른다) | `ConnectFailed` |
 | 과부하 / 해제 | Polite | "과부하. 무게를 표시할 수 없습니다" / "과부하 해제" | `Overload` / `OverloadCleared` |
 | 저울 신호 없음 | Polite | "저울 신호 없음" | `NoData` |
 | 영점 성공 | Polite | "영점 맞춤" | `TareDone` |
@@ -1328,7 +1329,7 @@ S1 알림:
 | S8 단계 카드(3.6) | 머리 줄 글자는 `weight(1f)`로 줄바꿈(버튼 셋 160 dp는 그대로). 수치 줄은 배율 ≥ 1.3에서 두 줄, 분·초 칸 64 dp × 배율. 열림/닫힘 칸 글자는 148 dp 칸 안(2.0에서 약 106 dp). "스위치 바꾸는 단계 넣기"·설명 줄·오류 줄은 줄바꿈, `maxLines` 제한 없음. 카드 높이는 내용 높이 |
 | 그래프 눈금 | 글자 크기는 배율을 따른다. 눈금 간격은 4.4 "눈금 간격" 규칙(잰 글자 크기로 최소 간격을 정하고 후보 중에서 고름)으로 정하므로 글자가 겹치지 않는다 |
 
-스크린샷 기준: 각 화면에서 가장 긴 문구 상태를 `_font200`으로 찍는다. S1은 `brew_reconnecting_running`(배너 + 멈춘 값 + 두 줄 동작)과 가로 `brew_running_recipe_landscape`, S2는 `connect_permission_denied`, S6은 `summary_save_failed`.
+스크린샷 기준: 각 화면에서 가장 긴 문구 상태를 `_font200`으로 찍는다. S1은 `brew_reconnecting_running`(배너 + 멈춘 값 + 두 줄 동작)과 가로 `brew_running_recipe_landscape`, S2는 `connect_permission_denied`·`connect_failed_pairing_mode`(가장 긴 문구), S3은 `device_sheet_failed_pairing_mode`, S1은 `brew_failed_pairing_mode`, S6은 `summary_save_failed`.
 
 디자인 검증에 필요한 추가 스크린샷(각 `_light`·`_dark`. milestones.json M7·M8·M9 스크린샷 조건은 이 목록을 따른다):
 - S1: `brew_reset_confirm`(D5), `brew_running_recipe_landscape`(+ `_font200`), `brew_live_oz`(소수 2자리, 기준 문자열 `−888.88`), `brew_idle_negative`(`−2.0`, U+2212), `brew_running_snackbar`(스낵바가 동작 줄 위), `brew_disconnected_running`, `brew_location_off`, `brew_scan_empty`, `brew_scan_failed`, `brew_scanning_stopped`, `brew_permission_permanently_denied`, `brew_failed_timeout`.
@@ -1396,11 +1397,11 @@ architecture.md의 UI 상태 모델은 아래 이름과 1:1로 맞춘다. 이름
 
 ### 10.1 연결 상태 `ConnectionUi`
 
-`NoDevice`, `Disconnected`, `BluetoothOff`, `PermissionMissing`, `PermissionPermanentlyDenied`, `LocationOff`(조건부), `Scanning(devices, stopped: Boolean)`, `ScanEmpty`, `ScanFailed`, `Connecting(address, deviceName?)`, `Connected(device)`, `Reconnecting(attempt: Int, nextRetryAtNanos: Long)`, `Failed(reason: ConnectFailed | ServiceNotFound | Timeout)`.
+`NoDevice`, `Disconnected`, `BluetoothOff`, `PermissionMissing`, `PermissionPermanentlyDenied`, `LocationOff`(조건부), `Scanning(devices, stopped: Boolean)`, `ScanEmpty`, `ScanFailed`, `Connecting(address, deviceName?)`, `Connected(device)`, `Reconnecting(attempt: Int, nextRetryAtNanos: Long)`, `Failed(reason: ConnectFailed | PairingModeMaybe | ServiceNotFound | Timeout)`.
 
 - `Scanning(stopped = true)`가 5.3의 "멈춤" 상태다(별도 `ScanStopped` 이름 없음).
 - `Reconnecting`의 "N초 후"는 화면이 1 s 주기로 `nextRetryAtNanos − now`를 올림해 계산한다. 회차 표시는 `attempt`/10. 백오프가 끝나 `connectGatt`가 진행되는 동안에도 상태는 `Reconnecting(attempt)`로 남는다(`Connecting`으로 바꾸지 않는다. architecture 6절). 그래서 칩은 "재연결 중"을 유지하고, 복구 알림은 "다시 연결됨"(`Reconnected`)이다. 남은 초가 0 이하이면(시도 중) "N초 후" 대신 "지금 연결하는 중"을 쓴다(5.1). 0이나 음수 초를 보이지 않는다.
-- `Failed(ConnectFailed)`는 GATT 오류와 재연결 10회 소진을 함께 담는다. 문구는 같다(5.1).
+- `Failed(ConnectFailed)`는 GATT 오류와 재연결 10회 소진을 함께 담는다. 문구는 같다(5.1). 첫 연결 133 + 화이트리스트 방송만 `Failed(PairingModeMaybe)`로 나눠 페어링 모드 안내를 더한다(2026-11-03, 프로브 B F-F5-1).
 - `Failed(Timeout)`은 10 s 연결 시간 제한(`ConnectTimeout`)이다. 앱 시작 때 저울이 꺼져 있으면 보통 이 상태가 된다(2.2).
 - `Scanning`·`ScanEmpty`·`ScanFailed`·`LocationOff`는 S2뿐 아니라 S1·S3에도 나타난다(같은 `ConnectionUi`를 쓰므로). S1 화면은 5.1.
 
@@ -1495,6 +1496,7 @@ architecture 9.5~9.7과의 대응:
 | 2026-11-02 | 3.1, 3.2, 4.2, 4.3, 4.4, 4.11, 5.2, 8.3, 8.6 | 사용자 결정(M8 리뷰 남은 지적·구현자 거부): 밸브 알림 `ValveOpen`·`ValveClose`를 Polite → Assertive(시각이 정해진 행동 신호, 터치 진동이 꺼진 TalkBack 사용자의 유일한 비시각 신호. 오류 Assertive와 뜻이 다름을 표 밑에 적고 300 ms 창 규칙 3번의 버리는 근거·테스트 (6) 추가). 넓은 창 왼쪽 칸 지표 상한 24 sp(밸브 유무와 무관, D1)·지표 줄 높이 1.22 em, 밸브 칸이 있어도 높이 기준 무게 축소를 같게 적용해 s′ ≤ s₀(지표를 20 sp로 줄이지 않음). 구현을 명세로 올림: 목표선 위 실제 중심선 2.5 dp·현재 구간 테두리 = 목표선 굵기 + 2 dp·대시 위상 전체 경로 기준, 넓은 창 밸브 칸은 너비로만 판정·칸 높이 = max(칸 내용, 숫자 줄 + 아래 줄)·`WeightArea`가 최소 높이를 알림, 자동 축소는 후보 크기마다 다시 잼. `brew_weight_worst_w320_light_font200` 기대를 단위 같은 줄로 고치고 단위 아래 줄 확인을 `brew_weight_worst_w220_light_font200`으로 옮김(Compose 비선형 배율 실측 3.695 dp/sp). 상단 바 레시피 이름 글꼴 ≥ 1.3에서 `maxLines = 2`, 그래프 단위 글자 "g"·"s"를 눈금 글자 겹침 판정의 첫 상자로. `brew_running_valve_landscape` 기대를 76 sp에서 크기 관계로 바꿈 | 사용자 결정 2026-11-02, `_workspace/03_report_wf_d0bbcb11-ada.md` M8 절 |
 | 2026-11-02 | 3.2, 3.5, 4.5, 4.11, 5.6, 8.4, 8.6, 11 | 하네스 추천(잠정, 사용자 최종 검토 대기) P1·P2. P1: 높이가 정해진 넓은 창의 밸브 칸을 아이콘 20 dp + 2 dp + 상태 글자 한 줄, 그 아래 4 dp + 안내 줄 2줄로 바꿈(칸 내용 104 → 76 dp, 한 줄이 56 dp에 들 때만, 아니면 세로 쌓기). 800 × 360·글꼴 1.0에서 칸 높이 80.3 dp ≤ 칸 없을 때 무게 영역 약 82 dp라 타이머 아래 끝 282 → 약 260 dp(보이는 끝 272). 선택지·채택안·근거·되돌리는 비용 표, 높이 계산, `brew_running_valve_landscape` 기대 = 타이머·유량 값 전체가 첫 화면에 보임. 세로 배치·띠·폭 64 dp·색·낭독 그대로. P2: V60 기본·6888에 기다리기 단계 "0:40까지 기다리기"(60 g, 0:40) → S7 "3단계 · 끝 1:30"·"5단계 · 끝 2:45", 단계 카드 1/3 → 3/3·1/5 → 3/5 → 4/5 → 5/5, 표식 수·끝 시각 그대로, S7 행 낭독, 다시 기록 목록 | `_workspace/run_meta.json` P1·P2, `_workspace/03_report_wf_f65760f7-857.md` M8 남은 지적 |
 | 2026-11-02 | 4.4, 8.6, 11 | 하네스 추천(잠정, 사용자 최종 검토 대기) P6: 목표선 행(실선이 위)과 단계 표식 행(평평한 목표선이 보임)의 어긋남 해소. 그리기 순서를 리본 → 목표선 테두리 → 목표선 → 실제 중심선 → 기다리기 구간(`isWaitStep`) 목표 점선 덧그림(모든 레시피, 현재 구간 2 + stepQ dp, 요약판 2 dp)으로 정함. 선택지·채택안·근거·되돌리는 비용 한 줄, 하리오·악마 그래프 장면 다시 기록 목록, 11절 항목 | `_workspace/run_meta.json` P6, `_workspace/03_feature-engineer_FIX-6_impl.md`(valveOpen 제외 shortcut) |
+| 2026-11-03 | 0, 4.3, 5.1, 8.3, 10.1 | 프로브 B 반영(하네스 추천(잠정, 사용자 최종 검토 대기), architecture 2026-11-03): `Failed(PairingModeMaybe)` 상태·문구(S1 배너·S2·S3 공용, 단정하지 않는 조건문 "이 휴대폰으로 처음 연결한다면")와 낭독 "페어링 모드가 필요할 수 있음", 유량 숫자의 급감 규칙(무게가 샘플당 2 g 넘게 줄면 평균 창을 비움). 새 스크린샷 `connect_failed_pairing_mode_*`, `brew_failed_pairing_mode_*`, `device_sheet_failed_pairing_mode_*`. 권한 영구 거부 판정 변경(즉시 거부)은 화면·문구 변화 없음 | `_workspace/04_device_results.md` F-F5-1·O-B8-1 |
 
 ## 13. 프로토타입 값 판정(HyperFrames, 2026-10-29)
 

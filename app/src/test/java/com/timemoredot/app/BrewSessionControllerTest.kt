@@ -117,7 +117,7 @@ class BrewSessionControllerTest {
         advanceTimeBy(100); r.read(0.0)   // 무장
         advanceTimeBy(100); r.read(1.5)
         r.scale.respondWith(ScaleCommand.SetTimer::class, CommandResult.Failed(CommandFailure.Timeout))
-        advanceTimeBy(100); r.read(1.8)
+        for (k in 1..5) { advanceTimeBy(100); r.read(1.5 + 0.3 * k) }   // 확인 구간 500 ms(F-B4-1)
         runCurrent()
         assertEquals(BrewPhase.Running, r.phase)
         assertEquals(1, r.starts())
@@ -135,8 +135,7 @@ class BrewSessionControllerTest {
         advanceTimeBy(100); r.read(0.0)
         assertEquals(BrewPhase.WaitingForPour, r.phase)
         assertEquals(0, r.starts())
-        advanceTimeBy(100); r.read(1.2)
-        advanceTimeBy(100); r.read(1.4)
+        for (k in 0..5) { advanceTimeBy(100); r.read(1.2 + 0.2 * k) }   // 1.2 g부터 확인 구간 500 ms(F-B4-1)
         runCurrent()
         assertEquals(BrewPhase.Running, r.phase)
         assertEquals(1, r.starts())

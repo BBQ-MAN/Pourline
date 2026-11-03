@@ -64,6 +64,7 @@ fun announcementText(a: BrewAnnouncement, connection: ConnectionUi): Pair<String
     BrewAnnouncement.ConnectFailed -> when ((connection as? ConnectionUi.Failed)?.reason) {
         ConnectFailure.Timeout -> "연결 실패, 응답 없음"
         ConnectFailure.ServiceNotFound -> "연결 실패, 저울 서비스 없음"
+        ConnectFailure.PairingModeMaybe -> "연결 실패, 페어링 모드가 필요할 수 있음"
         else -> "연결 실패"
     } to false
     BrewAnnouncement.Disconnected -> "저울 연결 끊김" to false

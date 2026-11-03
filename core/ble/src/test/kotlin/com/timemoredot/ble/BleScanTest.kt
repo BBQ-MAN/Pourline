@@ -2,6 +2,7 @@ package com.timemoredot.ble
 
 import com.timemoredot.protocol.ConnectionState
 import com.timemoredot.protocol.FailureReason
+import com.timemoredot.protocol.SCALE_SERVICE_UUID
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -133,7 +134,7 @@ class BleScanTest {
         assertEquals(2, h.client.scanResults.value.size)
         h.last.drop(133)
         runCurrent()
-        assertEquals(ConnectionState.Failed(FailureReason.GattError(133)), h.state)
+        assertEquals(ConnectionState.Failed(FailureReason.GattError(133, whitelistAdvertising = true)), h.state)   // 가짜 광고 01 01
         assertEquals(2, h.client.scanResults.value.size)
         h.onCreate = { it.connected() }
         h.client.connect(ADDR_A)
@@ -151,5 +152,33 @@ class BleScanTest {
         h.advance(7_000)
         h.client.startScan()
         assertTrue(h.client.scanResults.value.isEmpty())
+    }
+
+    /** F-F5-1(프로브 B Fold5): 방송 유형(A-1 값[0])을 후보에 보존하고, 첫 연결 133 + 화이트리스트(01)일 때만 표시한다. */
+    @Test fun firstConnect133FlagsWhitelistAdvertisingOnly() = runTest {
+        val h = Harness(this)
+        h.client.startScan()
+        runCurrent()
+        h.scanner.hit(ADDR_A, "TIMEMORE_Dot", mfr = byteArrayOf(0x01, 0x01))
+        h.scanner.hit(ADDR_B, null, mfr = byteArrayOf(0x02, 0x01))
+        assertEquals(listOf(1, 2), h.client.scanResults.value.map { it.broadcastType })
+        h.scanner.hit(ADDR_A, null, mfr = null, uuids = listOf(SCALE_SERVICE_UUID))   // 제조사 데이터 없는 광고는 방송 유형을 지우지 않는다
+        assertEquals(listOf(1, 2), h.client.scanResults.value.map { it.broadcastType })
+        h.onCreate = {}
+        h.client.connect(ADDR_B)   // 페어링 모드(02)
+        runCurrent()
+        h.last.drop(133)
+        runCurrent()
+        assertEquals(ConnectionState.Failed(FailureReason.GattError(133, whitelistAdvertising = false)), h.state)
+        h.client.connect(ADDR_A)   // 화이트리스트(01)지만 133이 아님
+        runCurrent()
+        h.last.drop(8)
+        runCurrent()
+        assertEquals(ConnectionState.Failed(FailureReason.GattError(8, whitelistAdvertising = false)), h.state)
+        h.client.connect(ADDR_A)
+        runCurrent()
+        h.last.drop(133)
+        runCurrent()
+        assertEquals(ConnectionState.Failed(FailureReason.GattError(133, whitelistAdvertising = true)), h.state)
     }
 }

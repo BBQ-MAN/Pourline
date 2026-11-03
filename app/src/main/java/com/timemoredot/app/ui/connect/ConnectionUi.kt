@@ -6,7 +6,8 @@ import com.timemoredot.protocol.FailureReason
 import com.timemoredot.protocol.ScaleDevice
 import com.timemoredot.protocol.ScanCandidate
 
-enum class ConnectFailure { ConnectFailed, ServiceNotFound, Timeout }
+/** PairingModeMaybe: 첫 연결 133 + 화이트리스트 방송(F-F5-1). 새 휴대폰이면 저울을 페어링 모드로 켜야 할 수 있다. */
+enum class ConnectFailure { ConnectFailed, PairingModeMaybe, ServiceNotFound, Timeout }
 
 /** architecture.md 9.2. S1 칩·배너, S2, S3가 같은 값을 쓴다. */
 sealed interface ConnectionUi {
@@ -44,12 +45,14 @@ fun connectionUi(
     is ConnectionState.Connecting -> ConnectionUi.Connecting(state.address, state.name)
     is ConnectionState.Connected -> ConnectionUi.Connected(state.device)
     is ConnectionState.Reconnecting -> ConnectionUi.Reconnecting(state.attempt, state.nextRetryAtNanos)
-    is ConnectionState.Failed -> when (state.reason) {
+    is ConnectionState.Failed -> when (val reason = state.reason) {
         FailureReason.NoDeviceFound -> ConnectionUi.ScanEmpty
         FailureReason.ScanFailed -> ConnectionUi.ScanFailed
         FailureReason.ServiceNotFound -> ConnectionUi.Failed(ConnectFailure.ServiceNotFound)
         FailureReason.ConnectTimeout -> ConnectionUi.Failed(ConnectFailure.Timeout)
-        is FailureReason.GattError, FailureReason.ReconnectExhausted -> ConnectionUi.Failed(ConnectFailure.ConnectFailed)
+        is FailureReason.GattError ->
+            ConnectionUi.Failed(if (reason.whitelistAdvertising) ConnectFailure.PairingModeMaybe else ConnectFailure.ConnectFailed)
+        FailureReason.ReconnectExhausted -> ConnectionUi.Failed(ConnectFailure.ConnectFailed)
     }
 }
 

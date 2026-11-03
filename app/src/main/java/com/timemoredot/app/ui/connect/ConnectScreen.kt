@@ -238,6 +238,7 @@ private fun Header(
 
 internal fun failureText(reason: ConnectFailure) = when (reason) {
     ConnectFailure.ConnectFailed -> "저울에 연결하지 못했습니다. 저울을 켜고 가까이 둔 뒤 다시 시도하세요."
+    ConnectFailure.PairingModeMaybe -> "저울에 연결하지 못했습니다. 이 휴대폰으로 처음 연결한다면 저울을 끈 뒤 버튼을 길게 눌러 페어링 모드로 켜고 다시 시도하세요."
     ConnectFailure.ServiceNotFound -> "이 기기에서 저울 서비스를 찾지 못했습니다. 다른 기기일 수 있습니다."
     ConnectFailure.Timeout -> "연결 응답이 없습니다. 저울이 켜져 있는지 확인하세요."
 }

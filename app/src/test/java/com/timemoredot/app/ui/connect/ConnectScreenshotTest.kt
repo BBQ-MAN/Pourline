@@ -66,6 +66,7 @@ class ConnectScreenshotTest {
             ConnectContent(state(ConnectionUi.Scanning(list, stopped = false), list), locationPermission = false)
         }
         shot("failed", state(ConnectionUi.Failed(ConnectFailure.ConnectFailed), list))
+        shot("failed_pairing_mode", state(ConnectionUi.Failed(ConnectFailure.PairingModeMaybe), list))   // F-F5-1
         shot("no_device", state(ConnectionUi.NoDevice, recent = null))
         shot("disconnected", state(ConnectionUi.Disconnected))
 
@@ -73,6 +74,7 @@ class ConnectScreenshotTest {
         shooter.font200("connect_permission_denied") {
             ConnectContent(state(ConnectionUi.PermissionPermanentlyDenied), locationPermission = false)
         }
+        shooter.font200("connect_failed_pairing_mode") { ConnectContent(state(ConnectionUi.Failed(ConnectFailure.PairingModeMaybe), list), locationPermission = false) }
         val unnamed = listOf(ScanCandidate("C8:2B:96:DD:A1:B2", null, -55, 0), ScanCandidate("C8:2B:96:DD:C3:D4", null, -74, 0))
         val dup = listOf(a, b)
         shot("scanning_duplicate_name", state(ConnectionUi.Scanning(dup, stopped = false), dup, recent = null))

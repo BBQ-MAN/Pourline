@@ -75,5 +75,7 @@ class DeviceSheetScreenshotTest {
     @Test fun `S3 연결 실패 스크린샷`() {
         val s = Shooter(rule).also { it.start() }
         s.both("device_sheet_failed") { Frame(ConnectionUi.Failed(com.timemoredot.app.ui.connect.ConnectFailure.ConnectFailed), ScaleStatus.Unknown) }
+        s.font200("device_sheet_failed_pairing_mode") { Frame(ConnectionUi.Failed(com.timemoredot.app.ui.connect.ConnectFailure.PairingModeMaybe), ScaleStatus.Unknown) }
+        s.both("device_sheet_failed_pairing_mode") { Frame(ConnectionUi.Failed(com.timemoredot.app.ui.connect.ConnectFailure.PairingModeMaybe), ScaleStatus.Unknown) }   // F-F5-1
     }
 }

@@ -78,7 +78,9 @@ internal class FakeGattTransport(val address: String, private val clock: Monoton
 
     fun connected() = channel.trySend(GattEvent.ConnectionChanged(true, 0))
     fun drop(status: Int) = channel.trySend(GattEvent.ConnectionChanged(false, status))
-    fun notify(hex: String) = channel.trySend(GattEvent.Notification(GattSpec.UPLINK, hex.hexToByteArray(), clock.nowNanos()))
+    fun notify(hex: String) = notifyAt(hex, clock.nowNanos())
+    /** 수신 시각을 정해 보낸다: 쓰기 전에 받았지만 늦게 처리된 알림 흉내(다른 앱의 응답). */
+    fun notifyAt(hex: String, atNanos: Long) = channel.trySend(GattEvent.Notification(GattSpec.UPLINK, hex.hexToByteArray(), atNanos))
     fun callback(kind: GattOpKind, value: Any?): Boolean = slot.complete(kind, value)
 
     private suspend fun op(kind: GattOpKind, call: String, value: Any?): Any? {

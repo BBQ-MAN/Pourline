@@ -271,8 +271,7 @@ class BrewViewModelTest {
         r.fake.respondWith(ScaleCommand.Tare::class, CommandResult.Failed(CommandFailure.Timeout))
         r.vm.onTareClick(); runCurrent()
         assertEquals(BrewUiEvent.Snackbar(BrewMessage.TareTimeout, true), r.events.filterIsInstance<BrewUiEvent.Snackbar>().last())
-        advanceTimeBy(100); r.read(1.5)
-        advanceTimeBy(100); r.read(1.8)
+        for (k in 0..5) { advanceTimeBy(100); r.read(1.5 + 0.3 * k) }   // 확인 구간 500 ms(F-B4-1)
         assertEquals(BrewPhase.Running, r.phase)
         val before = r.fake.sent.count { it == ScaleCommand.Tare }
         r.vm.onTareClick(); runCurrent()                        // 스낵바 '다시'

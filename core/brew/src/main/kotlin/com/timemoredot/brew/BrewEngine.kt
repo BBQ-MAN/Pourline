@@ -12,12 +12,14 @@ data class BrewSettings(                         // 사용자 설정 (S4), AppPr
 
 data class BrewConfig(                           // 고정 상수
     val autoStartConsecutive: Int = 2,             // 임계값을 넘는 연속 샘플 수
+    val autoStartConfirmNanos: Long = 500_000_000, // 처음 넘은 샘플부터 이 시간 동안 계속 넘어야 시작(F-B4-1 들어 올림 손 압력). 시작 시각은 처음 넘은 샘플로 소급
+    val weightDropGrams: Double = 2.0,             // 정상 샘플 사이 무게가 이보다 많이 줄면 유량 창을 비우고(O-B8-1) 자동 시작 확인을 취소한다. 실측 붓기 중 최대 감소 0.1 g(B8)
     val flowWindowNanos: Long = 1_000_000_000,     // 유량 이동 평균 창 (수신 시각 기준)
     val stepToleranceGrams: Double = STEP_TOLERANCE_GRAMS, // 단계 도달 판정 여유(7.1 상수, 요약판 표식과 같은 값)
     val finishStableNanos: Long = 5_000_000_000,   // 레시피 끝 시각(Recipe.finishSec) 뒤의 샘플만으로 이 시간 동안
     val finishStableGrams: Double = 0.5,           // 무게 변화가 이 값 이하면 자동 완료 (레시피가 있을 때만)
     val noDataTimeoutNanos: Long = 3_000_000_000,  // protocol.md C-01-12 — 연결 중 0x01 공백이 이보다 길면 NoData. 전원 버튼 끊김 감지 2.08~2.25 s(C-0B-2, macOS)보다 길게
-                                                   // TODO(device): protocol.md C-0B-2 (Android) — B6에서 Android 감지 시간을 재고 3 s 이상이면 올린다(architecture.md 4.1)
+                                                   // Android 실측 2.00 s(C-0B-2a, B6) + 0.5 s < 3 s라 그대로 둔다
     val maxElapsedNanos: Long = 3_599_900_000_000, // 타이머 상한 59:59.9 = 3599.9 s. 닿으면 자동 완료(CapReached)
 )
 
@@ -91,6 +93,8 @@ class BrewEngine(private val config: BrewConfig = BrewConfig(), settings: BrewSe
         private set
 
     private var aboveThreshold = 0          // 자동 시작 연속 샘플 수
+    private val pendingStart = ArrayList<Triple<Long, Float, Float>>()   // 확인 중인 넘은 샘플 (수신 ns, 무게, 유량). 시작하면 소급 샘플이 된다
+    private var lastValidWeight: Double? = null   // 직전 정상 무게(급감 판정)
     private var tareAtNanos = 0L            // 마지막 Tared 시각 (WaitingForPour 무장 기준)
     private var armed = false               // 영점이 반영된 Reading을 본 뒤 true (C-0D-2). BrewState에 노출하지 않는다
     private var sampleCount = 0             // ClearSamples 뒤 낸 AppendSample 수
@@ -147,7 +151,11 @@ class BrewEngine(private val config: BrewConfig = BrewConfig(), settings: BrewSe
         noDataRefNanos = maxOf(noDataRefNanos ?: at, at)
         val w = r.weightGrams
         val valid = !r.overload && w != null
+        // 컵·서버를 들어 올림: 들기 전 손 압력이 만든 저울 유량이 1 s 평균에 남지 않게 창을 비운다(O-B8-1)
+        val dropped = valid && lastValidWeight.let { it != null && it - w!! > config.weightDropGrams }
         if (valid) {
+            if (dropped) flowWindow.clear()
+            lastValidWeight = w
             flowWindow.addLast(at to r.scaleFlowGramsPerSec)
             state = state.copy(weightGrams = w, stale = null, staleSinceNanos = null)
         } else if (state.stale != StaleReason.Overload) {
@@ -160,11 +168,17 @@ class BrewEngine(private val config: BrewConfig = BrewConfig(), settings: BrewSe
             if (!armed) {
                 // 영점 전 무게(시각이 Tared 이전이거나 임계값 초과)는 무장하지 않고, 무장시킨 Reading은 세지 않는다
                 armed = valid && at > tareAtNanos && Math.abs(w!!) <= threshold
-                aboveThreshold = 0
+                resetAutoStart()
+            } else if (valid && w!! > threshold && !dropped) {
+                // 끊김 없는 공백(NoData 등)도 확인 구간으로 세지 않는다: 이 샘플이 새 t₀
+                if (pendingStart.lastOrNull()?.let { at - it.first > FINISH_MAX_GAP_NANOS } == true) resetAutoStart()
+                aboveThreshold++
+                pendingStart += Triple(at, w.toFloat(), state.flowGramsPerSec.toFloat())
             } else {
-                aboveThreshold = if (valid && w!! > threshold) aboveThreshold + 1 else 0
+                resetAutoStart()   // 확인 구간 안에서 임계값 아래·음수·급감·과부하면 취소(F-B4-1)
             }
-            if (aboveThreshold >= config.autoStartConsecutive) run(at, PhaseCause.AutoStart, sendStart = true, fresh = true)
+            val firstAt = pendingStart.firstOrNull()?.first
+            if (firstAt != null && aboveThreshold >= config.autoStartConsecutive && at - firstAt >= config.autoStartConfirmNanos) autoStart(firstAt)
         }
         if (state.phase == BrewPhase.Running && !capReached(at)) {
             val elapsed = state.timer.elapsedNanos(at)
@@ -207,6 +221,8 @@ class BrewEngine(private val config: BrewConfig = BrewConfig(), settings: BrewSe
             noDataRefNanos = maxOf(noDataRefNanos ?: at, at)   // Disconnected는 첫 정상 Reading까지 유지
             return
         }
+        resetAutoStart()   // 끊긴 사이의 공백을 확인 구간으로 세지 않는다
+        lastValidWeight = null   // 끊긴 사이 바뀐 무게를 재연결 첫 샘플의 급감으로 보지 않는다
         if (connected && state.phase == BrewPhase.Running) {
             emitSample(at, state.weightGrams?.toFloat() ?: Float.NaN, state.flowGramsPerSec.toFloat(), FLAG_DISCONNECTED)
         }
@@ -251,6 +267,7 @@ class BrewEngine(private val config: BrewConfig = BrewConfig(), settings: BrewSe
     private fun run(at: Long, cause: PhaseCause, sendStart: Boolean, fresh: Boolean) {
         state = if (fresh) {
             clearSamples()
+            resetAutoStart()   // "지금 시작"이 확인 구간 중이어도 남은 샘플을 버린다
             valveCheckedNanos = 0   // atSec 0 이벤트는 준비 상태라 신호가 없다
             state.copy(timer = TimerSnapshot(0, at), startedAtNanos = at)
         } else {
@@ -259,6 +276,18 @@ class BrewEngine(private val config: BrewConfig = BrewConfig(), settings: BrewSe
         if (sendStart) effects += BrewEffect.SendTimer(TimerAction.Start)
         state = state.copy(phase = BrewPhase.Running)
         this.cause = cause
+    }
+
+    /** 처음 넘은 샘플 시각으로 소급해 시작하고, 확인 구간의 앞 샘플을 낸다. 마지막(지금) 샘플은 onReading의 Running 처리가 낸다. */
+    private fun autoStart(firstAt: Long) {
+        val buffered = pendingStart.dropLast(1)
+        run(firstAt, PhaseCause.AutoStart, sendStart = true, fresh = true)
+        buffered.forEach { (t, w, f) -> emitSample(t, w, f, 0) }
+    }
+
+    private fun resetAutoStart() {
+        aboveThreshold = 0
+        pendingStart.clear()
     }
 
     private fun pause(at: Long, cause: PhaseCause, send: Boolean) {
@@ -287,7 +316,7 @@ class BrewEngine(private val config: BrewConfig = BrewConfig(), settings: BrewSe
     /** Idle(또는 Tared 뒤 WaitingForPour)로, 타이머 0. */
     private fun toIdle(phase: BrewPhase = BrewPhase.Idle, cause: PhaseCause = PhaseCause.User) {
         state = state.copy(phase = phase, timer = TimerSnapshot.Zero, startedAtNanos = null)
-        aboveThreshold = 0
+        resetAutoStart()
         armed = false
         this.cause = cause
     }
@@ -355,6 +384,6 @@ class BrewEngine(private val config: BrewConfig = BrewConfig(), settings: BrewSe
     private companion object {
         const val NANOS_PER_SEC = 1_000_000_000L
         const val NANOS_PER_MS = 1_000_000L
-        const val FINISH_MAX_GAP_NANOS = 1_000_000_000L   // 안정 창 샘플 사이 최대 공백. 10 Hz 알림의 300 ms 누락은 허용
+        const val FINISH_MAX_GAP_NANOS = 1_000_000_000L   // 안정 창·자동 시작 확인 구간 샘플 사이 최대 공백. 10 Hz 알림의 300 ms 누락은 허용
     }
 }

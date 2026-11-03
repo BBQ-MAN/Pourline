@@ -15,7 +15,7 @@
 | 연결 소유 | `BleScaleClient` 하나를 `AppContainer`(Application 범위)가 소유하고 앱 범위 `CoroutineScope`에서 돈다 | ViewModel이 소유하면 회전·화면 이동마다 연결이 끊긴다 |
 | 추출 세션 소유 | `BrewSessionController` 하나를 `AppContainer`가 소유한다. 엔진 입력 수집·샘플 버퍼·임시 저장을 맡는다 | 다른 탭으로 가거나 홈에 갔다 와도(B9) 샘플 수집과 타이머가 계속된다 |
 | 타이머 출처 | 경과 시간은 앱 단조 시계(`elapsedRealtimeNanos`)가 정한다. 시작·일시정지·리셋 **상태**만 앱 → 저울로 보낸다(0x02 Write). 저울 상태는 Write 응답 성공만으로 확정한다(v1.0.4는 Write 뒤 0x02 Notify를 보내지 않는다, C-02-3). 저울 → 앱 방향(0x02 Notify, `timerEvents` → `ScaleTimerChanged`)은 원문 §5.2.1 근거로 경로만 남긴다. TES017 v1.0.4는 버튼이 전원 하나뿐이라 이 경로가 발생하지 않는다(C-02-2). 저울 쪽 실패는 앱 타이머를 멈추지 않는다 | 저울 타이머는 1 s 해상도(C-01-8)라 소수 초를 못 준다. 상태를 보내야 저울 화면과 앱이 같다(B5) |
-| 유량 출처 | 저울 유량(0x01 flowRaw, g 모드 0.1 g/s, 값 = clamp(w(t) − w(t−1 s), 0, 999), C-01-5·C-01-7)에 앱이 1 s 이동 평균과 음수 0(방어)만 더한다. 무게가 줄어도 앱이 유량을 0으로 만들지 않는다 | 저울 유량이 확정 항목이다. 저울은 감소 중에도 1 s 창 안의 증가분으로 0보다 큰 값을 줄 수 있다(C-01-7). 무게 미분이나 "컵 들면 0" 규칙을 따로 만들면 코드만 늘고 저울 값과 어긋난다 |
+| 유량 출처 | 저울 유량(0x01 flowRaw, g 모드 0.1 g/s, 값 = clamp(w(t) − w(t−1 s), 0, 999), C-01-5·C-01-7)에 앱이 1 s 이동 평균과 음수 0(방어)만 더한다. 무게가 줄어도 앱이 유량을 0으로 만들지 않는다 | 저울 유량이 확정 항목이다. 저울은 감소 중에도 1 s 창 안의 증가분으로 0보다 큰 값을 줄 수 있다(C-01-7). 무게 미분이나 "컵 들면 0" 규칙을 따로 만들면 코드만 늘고 저울 값과 어긋난다. 단, 샘플 사이 2 g 넘는 급감이면 평균 창만 비운다(7.2 유량 급감 규칙, O-B8-1, 2026-11-03) |
 | 내부 단위 | 무게 g(`Double`), 유량 g/s, 시간 단조 ns(`Long`). raw → g 변환은 `:core:protocol`의 `ScaleStateReducer` 한 곳 | 계층 경계의 10배·1000배 오류를 막는다 |
 | 표시 단위 | 저울의 현재 단위(연결 직후 0x06 Read)를 따른다. oz는 표시할 때만 변환. 앱 안 g/oz 전환은 없고, 0x06 쓰기(`SetUnit`)는 MVP에서 보내지 않는다. 0x06 Notify 경로는 원문 근거로 남긴다 | 사용자 결정(2026-10-28). v1.0.4는 버튼으로 단위를 바꿀 수 없어(C-06-3) 연결 중 단위가 바뀌지 않는다. oz 배율(C-01-4·C-01-6)은 실기기로 확인할 방법이 없어 단위 테스트로만 둔다 |
 | 과부하 중 무게 | 마지막 정상 값을 멈춘 값으로 표시한다(`Stale(Overload)`, 9.3) | 사용자 결정(2026-10-28). 과부하 중 raw 값은 쓰지 않는다(C-01-11) |
@@ -119,15 +119,13 @@
 | 명세 ID | 내용 | 고칠 곳 | 기본값(후보) | 바뀌면 함께 할 일 |
 |---------|------|---------|--------------|-------------------|
 | C-01-4, C-01-6 | oz 모드 raw 배율 | `ProtocolConfig.kt`의 `ounceMode`(`RawScale`) | 무게 0.01 oz/raw, 유량 0.01 oz/s/raw | `ScaleStateReducerTest` 기대값. 표시 자릿수가 바뀌면 ui-design.md 9절. v1.0.4는 버튼으로 단위를 못 바꾸고(C-06-3) MVP는 0x06 쓰기를 하지 않아 실기기 확인 경로가 없다. 단위 테스트로만 둔다 |
-| A-1 (Android API) | `ScanRecord.getManufacturerSpecificData(0xFFFF)`가 2바이트 `[방송 유형][기기 유형]`을 주는지 | `:core:protocol` `Advertising.kt`의 `isScaleCandidate()`와 상수, 같은 파일의 `MANUFACTURER_FILTER_DATA`·`MANUFACTURER_FILTER_MASK`(`BleScanner`의 `ScanFilter` (b)가 이 상수만 쓴다, 6절) | 값[1] = `0x01`(DOT). 값[0](방송 유형)은 보지 않는다. 필터 data `[00, 01]`, mask `[00, FF]` | 프로브 B(B1) logcat `EV ADV` 줄로 확인. 다르면(길이·오프셋 포함) `Advertising.kt`의 판별 함수·필터 상수 두 개와 `AdvertisingTest`만 고친다. `:core:ble`은 고치지 않는다 |
 | G-1b (Android) | CCCD `01 00`로 Android에서도 알림이 오는지 | `:core:ble` `GattSpec.kt`의 `CCCD_ENABLE_NOTIFY` | `01 00`(macOS 확정) | 없음. B1에서 확인 |
 | G-6 (Android) | Android에서도 본딩 없이 되는지 | 코드 없음 | 본딩하지 않는다(macOS 확정) | B1에서 본딩이 필요하다고 나오면 새 마일스톤으로 `createBond` 경로와 `Failed(BondRequired)`를 더한다. 미리 만들지 않는다 |
 | `android-ble` 1절 neverForLocation 프로브 | `BLUETOOTH_SCAN`의 `neverForLocation`으로 Dot이 스캔되는지 | `:core:ble` `BlePermissions.kt`의 `USE_NEVER_FOR_LOCATION`과 같은 모듈 `AndroidManifest.xml`(둘 다 `:core:ble`) | `true`(neverForLocation 사용) | `false`로 바꾸면 매니페스트의 `neverForLocation` 제거·`ACCESS_FINE_LOCATION` maxSdk 해제를 함께 고친다. 런타임 권한 목록과 위치 서비스 확인은 `BlePermissions.required()`·`needsLocationService()`가 이 상수를 따르므로 `:app`은 고치지 않는다 |
-| A-5 | 화이트리스트 방송(`01`) 중 다른 휴대폰이 연결되는지 | 코드 없음 | 일반 연결과 같게 시도한다 | 11.1절 위험. 안 되면 새 마일스톤 |
 | F-11 | 나뉜 송신 허용 여부 | `BleScaleClient.send()`의 길이 검사 | MTU−3을 넘는 프레임은 `PayloadTooLarge`로 거부. 보낼 때 MTU 증가를 다시 요청하지 않고 나눠 쓰지도 않는다 | MVP 화면은 이름 쓰기를 쓰지 않는다. 필요해지면 마일스톤을 더한다. protocol.md 2.4도 이 행과 같다(나눠 쓰기는 앱 규칙이 아님, 9.8) |
 | F-10a, C-01-13, C-W-2, C-W-1a, A-3a, A-4 | 앱 규칙(실기기로 바뀌지 않음) | `ProtocolConfig.maxPayloadLength`(64), `ScaleStateReducer`(0x06 응답 전 0x01 버림), `ProtocolConfig.responseTimeoutMs`(1000, 실측 응답 128~304 ms), 디코더(`00`/`01` 밖 Write 응답 = 실패), 5.4 표시 이름 규칙, `EXPECTED_MODEL` | — | 앱 규칙이라 `TODO(device)`를 달지 않는다 |
 | C-01-12 | "active" 정의 | `:core:brew` `BrewConfig.noDataTimeoutNanos` | 3 s 동안 0x01이 없으면 `NoData`(2026-10-29 2 s → 3 s). 실측 주기 100 ms, 빈 저울에서도 계속 전송, 최대 공백 181~243 ms. 전원 버튼 끊김 감지 2.08~2.25 s(macOS, C-0B-2)보다 길게 잡았다 | 없음. Android 감지 시간은 아래 C-0B-2 (Android) 행. 프로브 B(B10) 판정은 알림 줄 수가 아니라 0x01 프레임 수로 한다: logcat `RX FFF1` 줄을 `crc_probe.py`(또는 `FrameReassembler`와 같은 재조립 규칙의 파서)로 재조립해 얻은 cmd `0x01` 프레임 수 ÷ (측정 구간 s × 10) ≥ 0.99. 측정 구간 = 알림 구독 뒤 첫 `RX FFF1` 줄부터 끊김 `EV` 줄 또는 600 s 중 이른 쪽까지. 알림 하나에 프레임이 2~4개 붙고 무게 없는 알림도 있어(F-10) 줄 수는 0x01 수가 아니다 |
-| C-0B-2 (Android) | 전원 버튼으로 끈 뒤 Android가 끊김을 감지하는 시간. macOS 실측 2.08~2.25 s는 저울이 링크를 정상 종료했는지 central의 supervision timeout인지 로그로 구별되지 않는다 | `:core:brew` `BrewConfig.noDataTimeoutNanos` | 3 s(macOS 감지 시간 기준) | 프로브 B(B6) logcat에서 마지막 `RX FFF1`부터 끊김 `EV`까지 시간을 잰다(M4 B6, 측정값 기록만이 판정). 규칙: **측정 최댓값 + 0.5 s ≥ `noDataTimeoutNanos`**이면 오케스트레이터가 FIX 마일스톤(`feature-engineer`)을 새로 만든다. 범위는 `BrewConfig.noDataTimeoutNanos` 값, M5 NoData 테스트 값, ui-design 0절·12절 NoData 문구(ui-designer 요청)다. 새 값이 사용자가 받아들이기 어려울 만큼 길면(추출 중 NoData가 늦게 뜸) 그 FIX 마일스톤을 `needs-decision`으로 둔다. M8 B6은 그 FIX 마일스톤이 생기면 그것에 의존한다. 규칙에 걸리지 않으면 할 일 없음 |
+| C-0B-2 (Android) — 2026-11-03 B6에서 2.00 s(status 8) 측정, 규칙(2.5 s < 3 s)에 걸리지 않아 할 일 없음. 아래는 원래 규칙 | 전원 버튼으로 끈 뒤 Android가 끊김을 감지하는 시간. macOS 실측 2.08~2.25 s는 저울이 링크를 정상 종료했는지 central의 supervision timeout인지 로그로 구별되지 않는다 | `:core:brew` `BrewConfig.noDataTimeoutNanos` | 3 s(macOS 감지 시간 기준) | 프로브 B(B6) logcat에서 마지막 `RX FFF1`부터 끊김 `EV`까지 시간을 잰다(M4 B6, 측정값 기록만이 판정). 규칙: **측정 최댓값 + 0.5 s ≥ `noDataTimeoutNanos`**이면 오케스트레이터가 FIX 마일스톤(`feature-engineer`)을 새로 만든다. 범위는 `BrewConfig.noDataTimeoutNanos` 값, M5 NoData 테스트 값, ui-design 0절·12절 NoData 문구(ui-designer 요청)다. 새 값이 사용자가 받아들이기 어려울 만큼 길면(추출 중 NoData가 늦게 뜸) 그 FIX 마일스톤을 `needs-decision`으로 둔다. M8 B6은 그 FIX 마일스톤이 생기면 그것에 의존한다. 규칙에 걸리지 않으면 할 일 없음 |
 
 ### 4.2 프로브 A(v1.0.4)로 확정되어 격리를 푼 항목
 
@@ -143,6 +141,10 @@
 | C-02-2, C-02-3, C-06-3 | 버튼은 전원 하나뿐. 0x02·0x06 Notify 0건(앱 쓰기 뒤에도 없음) | 저울 → 앱 타이머·단위 경로는 원문 근거로 남기되 v1.0.4에서 발생하지 않는다. 이 경로의 완료 조건은 단위 테스트로만 둔다. 메아리 거르기(이전 8.2)를 없앴다 |
 | C-0D-2 (protocol.md 3.7) | 0x0D 영점 성공 응답 뒤에도 약 300 ms(알림 2개) 동안 영점 전 무게가 온다. 응답과 같은 알림의 무게도 영점 전 값이다. 실측 두 번 모두 같다: `_workspace/04_device_probeA_mac.log:2724-2729`(응답 + 213.4 g, 이어서 213.4 g 두 번, 0은 응답 뒤 약 300 ms의 log:2729부터, 벡터 `rx-tare-writeack-004`), log:13753-13756(145.0 g = weightRaw 1450 같은 모양, 벡터 `rx-tare-preweight-seq-001`: 알림 4개 = 1450 + 영점 응답, 1450, 1450, 0) | 7.2 WaitingForPour 무장 규칙: `Tared` 뒤 영점이 반영된 `Reading`(시각이 `Tared` 뒤이고 \|무게\| ≤ 임계값)을 한 번 본 뒤부터 자동 시작 연속 카운트를 센다 |
 | C-0B-2 (macOS) | 전원 버튼으로 끄면 Notify 없이 약 2.1~2.2 s 뒤 끊김(macOS bleak 측정). Android 감지 시간은 4.1 미확정 | 일반 끊김과 구별할 수 없어 재연결 경로를 탄다(6절) |
+| A-1 (Android API), C-0B-2a (프로브 B, 2026-11-03) | `getManufacturerSpecificData(0xFFFF)` = 2바이트 `01 01`(Android 16·17). Android 끊김 감지 2.00 s(status 8) | `Advertising.kt`·`BrewConfig`의 `TODO(device)` 제거. 값 변경 없음 |
+| A-5 (관찰, 프로브 B Fold5) | 화이트리스트 방송(`01`) 저울은 처음 보는 휴대폰의 연결을 GATT 133으로 거절하고, 페어링 모드(전원을 끈 뒤 버튼 길게)로 켜면 연결된다 | `ScanCandidate.broadcastType` 보존, `FailureReason.GattError.whitelistAdvertising`, `ConnectFailure.PairingModeMaybe` 안내(5.4·9.2, FIX-9) |
+| C-MC-1 (protocol 3.13) | 저울은 두 central 동시 연결을 받고 다른 앱 요청의 응답도 FFF1로 보낸다 | 요청-응답 짝짓기에 "쓰기 직전 시각 이후 수신" 조건, 짝 없는 응답은 로그만(5.4·6절, FIX-8) |
+| D-1 | Dot에는 숫자 화면이 없다 | 저울 타이머는 사용자에게 보이지 않는다. 앱 타이머가 유일한 표시 타이머라 자동 시작 확인 구간 동안 저울 타이머가 늦게 시작해도 보이는 차이가 없다(7.2) |
 
 - 수신 CRC를 검사하지 않는 것은 우회가 아니라 확정 규칙이다(F-8, protocol.md 2.3). `android-ble` 7·8절도 2026-10-29에 정정됐다(13절).
 - 미확정 항목에 기대는 완료 조건은 `milestones.json`에서 `[실기기 …]`로 시작한다. QA는 이 조건을 `unverified`로 판정하고, 해당 마일스톤은 `awaiting-device`가 된다. 의존 마일스톤은 계속 진행할 수 있다.
@@ -294,10 +296,12 @@ const val DEVICE_TYPE_DOT = 0x01           // A-1 값[1]
 data class Advertisement(val name: String?, val serviceUuids: List<java.util.UUID>, val manufacturerData: Map<Int, ByteArray>)
 /** (a) serviceUuids에 SCALE_SERVICE_UUID, 또는 (b) manufacturerData[0xFFFF]가 2바이트 이상이고 값[1] == DEVICE_TYPE_DOT. 이름은 보지 않는다(A-2: 화이트리스트 방송은 이름 없음).
  *  값[0](방송 유형 01 화이트리스트 / 02 일반)은 판별에 쓰지 않는다. G-7 서비스(5833ff01-…)만 있는 광고는 후보가 아니다. */
-fun isScaleCandidate(adv: Advertisement): Boolean     // TODO(device): protocol.md A-1 — Android getManufacturerSpecificData(0xFFFF) 반환 형식은 B1에서 확인
+fun isScaleCandidate(adv: Advertisement): Boolean     // A-1 Android 반환 2바이트 확정(프로브 B1)
+const val BROADCAST_WHITELIST = 0x01                    // A-1 값[0] 01 = 화이트리스트(02 = 일반·페어링 모드)
+fun broadcastTypeOf(adv: Advertisement): Int?          // A-1 값[0]. 2바이트 미만이면 null. 판별에는 쓰지 않고 첫 연결 실패 안내에만 쓴다(5.4)
 /** ScanFilter (b)의 manufacturer data·mask(6절). isScaleCandidate (b)와 같은 길이·오프셋 가정이라 같이 고친다. 호출부는 copyOf()로 넘긴다. */
-val MANUFACTURER_FILTER_DATA: ByteArray = byteArrayOf(0x00, DEVICE_TYPE_DOT.toByte())   // TODO(device): protocol.md A-1
-val MANUFACTURER_FILTER_MASK: ByteArray = byteArrayOf(0x00, 0xFF.toByte())              // TODO(device): protocol.md A-1
+val MANUFACTURER_FILTER_DATA: ByteArray = byteArrayOf(0x00, DEVICE_TYPE_DOT.toByte())   // A-1 확정(프로브 B1)
+val MANUFACTURER_FILTER_MASK: ByteArray = byteArrayOf(0x00, 0xFF.toByte())              // A-1 확정(프로브 B1)
 const val EXPECTED_MODEL = "TES017"                     // protocol.md A-4 앱 규칙(G-3 확정 값). 다른 파일은 리터럴로 갖지 않는다
 ```
 
@@ -306,7 +310,8 @@ const val EXPECTED_MODEL = "TES017"                     // protocol.md A-4 앱 �
 ```kotlin
 /** name: 표시 이름 규칙(A-3a, 앱 규칙). 광고 이름 → 없으면 address가 저장 주소와 같을 때 저장된 last_name → 없으면 null.
  *  null이면 화면이 표시할 때만 대체 문구 "TIMEMORE Dot · 주소 끝 5자"(ui-design 3.3)로 바꾼다. 대체 문구는 name·last_name에 저장하지 않는다. 같은 기기라도 방송 유형에 따라 이름이 생기거나 사라지므로, 한 번 본 이름은 스캔 동안 유지한다. */
-data class ScanCandidate(val address: String, val name: String?, val rssi: Int, val lastSeenNanos: Long)
+data class ScanCandidate(val address: String, val name: String?, val rssi: Int, val lastSeenNanos: Long,
+                         val broadcastType: Int? = null)   // A-1 값[0](broadcastTypeOf). 2026-11-03 FIX-8
 
 data class ScaleDevice(
     val address: String,
@@ -322,7 +327,8 @@ sealed interface FailureReason {
     data object ScanFailed : FailureReason             // onScanFailed
     data object ServiceNotFound : FailureReason        // 0xFFF0 또는 FFF1/FFF2 없음
     data object ConnectTimeout : FailureReason         // connectGatt부터 알림 구독까지 10 s 초과
-    data class GattError(val status: Int) : FailureReason   // 첫 연결 실패 (예: 133)
+    data class GattError(val status: Int, val whitelistAdvertising: Boolean = false) : FailureReason   // 첫 연결 실패 (예: 133).
+        // whitelistAdvertising = status 133이고 scanResults에 있는 그 주소의 broadcastType == BROADCAST_WHITELIST(A-5). 스캔 없이 직접 연결이면 false
     data object ReconnectExhausted : FailureReason     // 재연결 10회 실패
 }
 
@@ -377,6 +383,8 @@ interface ScaleClient {
 - `readings`는 `ScaleStateReducer`가 단위를 안 뒤의 값만 낸다(C-01-13).
 - `status.scaleTimer`는 Read 응답·Notify·Write 성공 모두로 바뀐다. 엔진 입력(`ScaleTimerChanged`)은 `timerEvents`에서만 만들고, `status.scaleTimer`는 연결 직후 앱 상태와 맞추는 데에만 쓴다(8.2).
 - `send()`의 Write가 성공이면 구현이 `ScaleStateReducer.onCommandSucceeded()`를 부른 뒤 반환한다. 호출자는 상태를 직접 고치지 않는다. v1.0.4는 Write 뒤 같은 cmd의 Notify를 보내지 않으므로(C-02-3) Write 응답 성공이 상태를 확정하는 유일한 근거다. Notify를 기다리지 않는다.
+- **다른 앱과 동시 연결(protocol 3.13, C-MC-1, 2026-11-03 하네스 추천(잠정))**: 대기 응답은 (opcode, cmd) 키가 같고 **수신 시각 ≥ 요청 쓰기 직전 시각**인 프레임만 받는다. 그 전에 받은 같은 키 프레임은 다른 앱의 응답이다. 대기 요청과 짝이 없는 응답(`responseKey() != null`)은 디버그 로그 `EV 짝 없는 응답 …`만 남기고, Read 응답 값은 저울의 실제 상태라 환원기에 그대로 넣는다. 화면 안내("다른 앱이 연결돼 있을 수 있음")는 두지 않는다: 늦게 온 자기 응답과 구별되지 않아 오탐이 생기고, 다른 앱 응답이 Pourline 동작을 바꾸는 경로가 위 규칙으로 막혀 사용자가 할 일이 없다. 남는 한계(쓰기 뒤 300 ms 안에 다른 앱의 같은 Write 응답이 먼저 오면 그것을 성공으로 받음)는 protocol 3.13.
+- **첫 연결 페어링 모드 안내(A-5, 2026-11-03 하네스 추천(잠정))**: attempt 0 실패가 status 133이고 `scanResults`에 있는 그 주소의 마지막 `broadcastType`이 `BROADCAST_WHITELIST`면 `Failed(GattError(133, whitelistAdvertising = true))`. 재연결(attempt ≥ 1) 실패와 `ReconnectExhausted`에는 붙이지 않는다(이미 연결한 휴대폰).
 - `PowerOff` 성공 뒤의 끊김은 재연결하지 않고 `Idle`로 간다(protocol 3.5). 저울 전원 버튼으로 끈 끊김(C-0B-2)은 앱이 구별할 수 없어 일반 끊김처럼 재연결한다. `SetUnit`·`ForgetDevice`·`FactoryReset`·`SetName`·`PowerOff`는 MVP 화면에서 부르지 않는다(`SetUnit`: 앱 안 g/oz 전환 없음, 0절). 코덱·`onCommandSucceeded(SetUnit)`은 벡터와 환원기 테스트 때문에 모두 구현한다.
 
 ### 5.5 `FakeScaleClient` (testFixtures)
@@ -574,6 +582,8 @@ data class BrewSettings(                         // 사용자 설정 (S4), AppPr
 
 data class BrewConfig(                           // 고정 상수
     val autoStartConsecutive: Int = 2,             // 임계값을 넘는 연속 샘플 수
+    val autoStartConfirmNanos: Long = 500_000_000, // 처음 넘은 샘플부터 이 시간 동안 계속 넘어야 자동 시작(확인 구간, F-B4-1). 시작 시각은 처음 넘은 샘플로 소급
+    val weightDropGrams: Double = 2.0,             // 연속한 정상 샘플 사이 무게 감소가 이보다 크면 "급감": 유량 창 비움(O-B8-1), 확인 구간 취소(F-B4-1). 실측 붓기 중 최대 감소 0.1 g(B8)
     val flowWindowNanos: Long = 1_000_000_000,     // 유량 이동 평균 창 (수신 시각 기준)
     val stepToleranceGrams: Double = STEP_TOLERANCE_GRAMS, // 단계 도달 판정 여유 (7.1 상수, 요약판 표식과 같은 값)
     val finishStableNanos: Long = 5_000_000_000,   // 레시피 끝 시각(Recipe.finishSec) 뒤의 샘플만으로 이 시간 동안
@@ -664,7 +674,8 @@ class BrewEngine(config: BrewConfig = BrewConfig(), settings: BrewSettings = Bre
 | WaitingForPour(무장 전) | `Reading`: `atNanos > 영점 시각`이고 \|무게\| ≤ `autoStartThresholdGrams` | 그대로, 무장됨 (이 `Reading`은 카운트하지 않는다) | — |
 | WaitingForPour(무장 전) | 그 밖의 `Reading`(영점 시각 이전 수신, 또는 \|무게\| > 임계값 = 영점 전 무게) | 그대로, 연속 카운트 0 유지 | — |
 | Running, Paused, Finished | `Tared` | 그대로. 무게 기준 보정(오프셋 누적)은 하지 않는다. 앱은 Running·Paused에서 영점을 막는다(9.4 `canTare`), 저울 버튼 영점은 막을 수 없어 이후 무게를 그대로 쓴다 | — |
-| WaitingForPour(무장됨) | `Reading` 무게 > `autoStartThresholdGrams`가 `autoStartConsecutive`회 연속 | Running | `ClearSamples`, `SendTimer(Start)` |
+| WaitingForPour(무장됨) | `Reading` 무게 > `autoStartThresholdGrams`(급감 아님)가 `autoStartConsecutive`회 이상 연속이고, 그 연속의 첫 샘플 시각 t₀부터 이 `Reading`까지 ≥ `autoStartConfirmNanos` | Running. 타이머 시작 = t₀(소급), `startedAtNanos = t₀` | `ClearSamples`, `SendTimer(Start)`, 확인 구간의 앞 샘플들 `AppendSample`(offset = 각 수신 시각 − t₀, 무게·유량은 그 샘플 처리 뒤 값), 이 `Reading`의 `AppendSample` |
+| WaitingForPour(무장됨) | 확인 구간 중 `Reading`이 임계값 이하(음수 포함)·급감·과부하, 또는 `ConnectionChanged(false)`, 또는 앞 확인 샘플과 1 s(`FINISH_MAX_GAP_NANOS`) 넘게 떨어진 `Reading`(끊김 없는 공백·NoData, 이 샘플이 새 t₀) | 그대로. 연속 카운트·확인 구간 취소(다음에 넘는 샘플이 새 t₀) | — |
 | WaitingForPour | `CancelWaiting` | Idle | — |
 | WaitingForPour | `SettingsChanged`(자동 시작 꺼짐) | Idle | — |
 | Idle, WaitingForPour | `UserTimer(Start)` ("시작"/"지금 시작") | Running | `ClearSamples`, `SendTimer(Start)` |
@@ -683,6 +694,8 @@ class BrewEngine(config: BrewConfig = BrewConfig(), settings: BrewSettings = Bre
 | Idle, WaitingForPour | `SelectRecipe` | 그대로, recipe 반영 | — |
 
 - 자동 시작 무장(protocol.md C-0D-2, 4.2): 저울은 0x0D 성공 응답과 같은 알림, 그리고 그 뒤 약 300 ms(알림 2개) 동안 영점 전 무게를 보낸다. 컵·드리퍼를 올리고 영점을 누르면 이 값(> 임계값)이 연속으로 들어와 바로 잘못 자동 시작한다. 또 `readings`(SharedFlow)와 `send()` 반환은 다른 경로라 응답 앞에 온 프레임이 `Tared` 뒤에 처리될 수 있다. 그래서 WaitingForPour는 무장 전에 연속 카운트를 세지 않고, 영점이 반영된 첫 `Reading`(시각이 `Tared` 뒤, \|무게\| ≤ 임계값)에서 무장한다. 무장 여부와 영점 시각은 엔진 내부 상태이고 `BrewState`에 넣지 않는다(새 화면 상태 없음). 빈 저울에서 영점을 누르면 첫 `Reading`에서 바로 무장한다. `UserTimer(Start)`("지금 시작")는 무장과 상관없다.
+- **자동 시작 확인 구간(F-B4-1, 2026-11-03 하네스 추천(잠정))**: 영점 뒤 무장된 상태에서 물건을 들어 올리면 손 압력으로 잠깐 + 무게가 나온다(실측 `04_device_b_B4.log` +342.4 s: 2.3 → 5.2 → 0.3 → 4.0 → −2.5 → −29.8 → −47.7 g, 약 100 ms 간격). 이전 규칙(2샘플 연속)은 2.3·5.2에서 시작했다. 그래서 처음 넘은 샘플부터 500 ms 동안 계속 넘어야 시작하고, 그 사이 임계값 아래·음수·급감(2 g 넘게 감소)이면 취소한다. 실제 붓기는 단조 증가라(`04_device_b_B8.log` +218.9 s: 2.8, 4.4, 5.2, 7.2, 8.0, 9.5 g) 500 ms 뒤 시작하고, 타이머·샘플은 처음 넘은 샘플로 소급하므로 기록에서 잃는 시간이 없다. 화면이 Running으로 바뀌는 것만 최대 약 0.5 s(+ 알림 간격) 늦다. 저울 타이머(`SetTimer(Start)`)는 0.5 s 늦게 시작하지만 저울 타이머는 1 s 해상도이고 Dot에는 화면이 없어(D-1) 보이는 차이가 없다. 앱 타이머가 표시·기록의 기준이다(3절). 비교한 대안: (a) 연속 3샘플 + 단조 증가 — 손 압력이 3샘플 단조로 오르는 경우(B4 +198.6 s 0.8 → 2.9 → 6.0 g)를 막지 못한다, (b) 바로 시작하고 음수가 되면 취소·`SendTimer(Reset)` — 화면이 Running으로 바뀌었다 돌아오고 TalkBack 알림·모양 전환·저울 명령이 두 번 나간다, (c) 임계값 올리기 — 사용자 설정(0.5/1.0/2.0 g)을 무시하고 손 압력(5.2 g)보다 높여야 해 느린 붓기를 놓친다. 되돌리는 비용: `BrewConfig` 상수 두 개와 엔진 분기, 테스트 시계열.
+- **유량 급감 규칙(O-B8-1, 2026-11-03 하네스 추천(잠정))**: 연속한 정상 샘플 사이 무게가 `weightDropGrams`(2 g) 넘게 줄면 유량 창을 비우고 그 샘플의 저울 유량부터 다시 평균한다. 원인: 서버를 들 때 손 압력으로 생긴 저울 유량(1 s 순증가, 수십 g/s)이 앱 1 s 평균 창에 남아, 무게가 −245.9 g으로 떨어진 뒤에도 최대 1 s 동안 20.6 g/s가 보였다(B8 저장 뒤 Idle, `B8_end.png`). 천천히 줄 때(샘플당 2 g 이하)는 바꾸지 않는다: 저울 유량이 감소 중에도 0보다 클 수 있다는 C-01-7은 그대로이고, 붓기 중 실측 감소는 샘플당 최대 0.1 g이다. 컵을 올릴 때(증가) 튀는 값은 그대로 평균한다(그래프는 ui-design 4.4가 20 g/s에서 자른다).
 - 자동 완료(사용자 결정 2026-10-29): 레시피가 있으면 레시피 끝 시각(`finishSec`)이 지나기 전에는 무게가 멈춰도 끝내지 않는다. 침지(하리오 스위치: 10 s에 다 붓고 2:00에 열기)나 뜸 대기처럼 무게가 멈추는 구간에서 일찍 끝나지 않게 한다. 끝 시각 전 샘플은 안정 판정 창에 넣지 않는다. 레시피 없는 추출은 지금처럼 무게 정지 자동 완료가 없다(사용자 "완료"·타이머 상한만). 타이머 상한 59:59.9 자동 완료는 레시피와 상관없이 그대로다.
 - 타이머 상한: Paused는 타이머가 멈춰 있어 상한에 닿지 않으므로 Running만 본다. 끊김·`NoData`로 샘플이 쌓이지 않아도 `Tick`이 상한을 잡는다. 같은 입력에서 상한 판정이 샘플 추가·마지막 단계 판정보다 먼저다. 샘플 버퍼 가득 참(8.2 `Finish(capReached = true)`)과 타이머 상한 중 먼저 오는 쪽이 끝낸다. 둘 다 원인은 `CapReached`다.
 - 표에 없는 (상태, 입력) 조합은 상태를 바꾸지 않고 효과도 내지 않는다. 앱이 보낸 `SetTimer`의 Write 성공 반영은 `status`만 바꾸고 `ScaleTimerChanged`가 되지 않는다(5.4 `timerEvents`). v1.0.4는 Write 뒤 Notify를 보내지 않는다(C-02-3). 다른 펌웨어가 같은 상태의 Notify를 되돌려 보내도 이미 같은 상태라 이 규칙으로 무시된다. 그래서 `SendTimer`는 저울에서 온 변화에 대해 나가지 않는다.
@@ -692,11 +705,11 @@ class BrewEngine(config: BrewConfig = BrewConfig(), settings: BrewSettings = Bre
 - 저울 버튼 리셋을 바로 버리지 않고 요약(S6)으로 보내는 이유: 손이 젖은 채 실수로 누른 버튼 하나로 기록을 잃지 않게 한다. 요약에서 사용자가 버릴 수 있다.
 - `Reading`은 모든 상태에서 `weightGrams`·`flowGramsPerSec`·`stale`을 갱신한다.
 - **샘플**: Running일 때만 `Reading`마다 `AppendSample`. `offsetMs = timer.elapsedNanos(atNanos) / 1_000_000`(일시정지 제외 앱 타이머 경과, 3절). 그래서 일시정지 뒤 첫 샘플은 일시정지 직전 샘플 바로 다음 offset이고, 그래프·목표선·`reachTimesMs`·`paceDeltaSec`·CSV가 같은 시간 축을 쓴다. 과부하면 무게 NaN + `FLAG_OVERLOAD`. Running 중 `ConnectionChanged(false)`면 마지막 무게로 `FLAG_DISCONNECTED` 샘플 하나. 샘플 유량은 모든 샘플(플래그 샘플 포함)에서 그 입력을 처리한 뒤의 `BrewState.flowGramsPerSec`(평활, 0 이상)다. 플래그 샘플은 유량 창에서 빠지므로 그 값은 창에 남은 정상 샘플의 평균이다. 그래서 S1·S6·S10 리본 굵기, CSV `flow_g_per_s`, S1 유량 숫자가 같은 값을 쓴다.
-- **유량**: 과부하·끊김 샘플은 창에서 뺀다. 평활값 = 창(`flowWindowNanos`, 수신 시각 기준) 안 저울 유량의 평균, 음수는 0(방어, 실측 음수 없음). 무게 변화로 유량을 고치지 않는다. 저울 유량은 clamp(w(t) − w(t−1 s), 0, 999)라 무게가 줄면 보통 0이지만 감소 중에도 0보다 클 수 있고, 컵을 올리거나 다시 놓으면 1 s 동안 최대 99.9 g/s가 나온다(C-01-5, C-01-7). 앱은 그 값을 그대로 평균한다. 알림이 300 ms 비어도 시간 창이라 보정이 필요 없다.
+- **유량**: 과부하·끊김 샘플은 창에서 뺀다. 평활값 = 창(`flowWindowNanos`, 수신 시각 기준) 안 저울 유량의 평균, 음수는 0(방어, 실측 음수 없음). 무게 변화로 유량 값을 고치지 않는다. 다만 급감(위 "유량 급감 규칙")이면 창을 비운다. 저울 유량은 clamp(w(t) − w(t−1 s), 0, 999)라 무게가 줄면 보통 0이지만 감소 중에도 0보다 클 수 있고, 컵을 올리거나 다시 놓으면 1 s 동안 최대 99.9 g/s가 나온다(C-01-5, C-01-7). 앱은 그 값을 그대로 평균한다. 알림이 300 ms 비어도 시간 창이라 보정이 필요 없다.
 - **stale**: 끊김 → `Disconnected`, 과부하 → `Overload`(`weightGrams`는 과부하 직전 정상 값을 그대로 둔다. 사용자 결정 2026-10-28), 연결 중 NoData 기준 시각 = max(마지막 `Reading.atNanos`, 마지막 `ConnectionChanged(true).atNanos`)(연결 뒤 `Reading`이 없으면 연결 시각)이고, 이 기준 뒤 `noDataTimeoutNanos` 넘게 `Tick`만 오면 → `NoData`. 그래서 재연결 직후 첫 `Reading` 전(0x06 응답 전 0x01 버림, C-01-13)의 `Tick`은 끊기기 전 `Reading`으로 NoData를 만들지 않는다. `ConnectionChanged(true)`는 `Disconnected`를 풀지 않는다(첫 정상 `Reading`까지 유지, 3 s를 넘으면 `NoData`로 바뀜). 다음 정상 `Reading`에서 해제. stale이 시작된 시각을 `staleSinceNanos`에 둔다(NoData는 위 기준 시각). 끊김 중 타이머는 계속 간다(앱 시계).
 - **단계**: 현재 단계 = 무게 < `targetGrams − tolerance`인 첫 단계, 없으면 마지막 단계이고 `lastStepReached = true`. 기다리기 단계(7.1 `isWaitStep`)도 이 규칙 그대로다(앞 단계와 함께 닿아 건너뜀, M5 규칙 불변). `paceDeltaSec`만 7.1 세 인자 `plannedSecFor`로 계산한다(FIX-4).
 - **밸브 신호**(사용자 결정 2026-10-29, 일정은 2026-10-30부터 단계에서 파생한 `recipe.valveSchedule`, 7.1): Running에서 `Reading`·`Tick`을 처리할 때 `e = timer.elapsedNanos(atNanos)`, 엔진 내부 `valveCheckedNanos`(직전 확인 경과)로 `valveCheckedNanos < atSec × 1e9 ≤ e`인 `recipe.valveSchedule` 이벤트를 찾는다. 있으면 그중 **마지막 하나만** `ValveCue(event)`로 낸다(공백 뒤 한 입력에 둘을 넘어도 한 번, 지나간 이벤트를 소급해 여러 번 내지 않는다). 그 뒤 `valveCheckedNanos = max(valveCheckedNanos, e)`(늦게 온 이른 시각 `Reading`이 다시 내지 않게). Idle·WaitingForPour에서 Running에 들어갈 때 `valveCheckedNanos = 0`이라 atSec 0 이벤트는 신호가 없다(준비 상태). 그래서 신호는 타이머가 0:00 뒤의 이벤트를 넘을 때만 나고, 시작·자동 시작·재개·초기화(`UserTimer`·`Discard`·`NewBrew` 등 Reading·Tick이 아닌 입력)에는 나지 않는다. Paused는 타이머가 멈춰 신호가 없고, Paused → Running은 값을 그대로 이어 가 재개 뒤 처음 넘을 때 한 번 낸다. `ConnectionChanged` 등 다른 입력도 신호를 내지 않는다. 그래서 끊김 중에는 `Tick`(1 s)이 잡아 최대 1 s 늦다. 타이머 상한에 닿는 입력은 상한 판정이 먼저라 신호를 내지 않는다. 효과 순서는 그 입력의 `AppendSample` 다음, 전이 효과(`Completed` 등) 앞이다. `valveCheckedNanos`는 엔진 내부이고 `BrewState`에 넣지 않는다.
-- 테스트 시계열(필수): 정상 추출, 영점 직후 ±0.6 g 흔들림(시작 안 함), 실측 영점 순서(`Tared` → 213.4 g × 3 → 0 g, Running 안 됨. 이어서 1.2·1.4 g 연속 2샘플에서 Running, C-0D-2), 컵 들어 올림(무게 감소 중 저울 유량 0.5 g/s가 그대로 평균에 들어감), 300 ms 공백, 3 s 넘는 공백(NoData. 2.5 s 공백은 NoData 아님), 끊김 후 재연결(재연결 뒤 Reading 없이 2.5 s Tick은 Disconnected 유지), 과부하, 저울 버튼 타이머(메아리 없음), 저울 버튼 리셋(요약으로), 레시피 단계·`paceDeltaSec` 부호, 기다리기 단계(건너뜀·기다리는 동안 `paceDeltaSec` 0·L ± 1 g 흔들림에 튀지 않음), 밸브 신호(정확히 도달·지나침·Paused 중·재개 뒤 한 번·한 입력에 두 이벤트), 자동 완료(끝 시각 전 정지는 무시, 하리오 스위치 침지 포함), 타이머 상한(Reading 없이 Tick만으로 도달 포함), 자동 시작 꺼짐, 일시정지 10 s 뒤 계속(gaps 없음, offset 연속), Idle에서 설정 변경 뒤 영점·임계값 판정, phase 전이마다 `PhaseChanged` 출처.
+- 테스트 시계열(필수): 실측 들어 올림(`04_device_b_B4.log` +342.478~343.375 s: 2.3, 5.2, 0.3, 4.0, −2.5, −29.8, −46.9, −47.5, −47.7 g → 시작 안 함, `SendTimer` 없음, 유량 0. `AutoStartConfirmTest`), 실측 붓기 시작(`04_device_b_B8.log` +218.819~219.600 s: 0.6, 2.8, 4.4, 5.2, 7.2, 8.0, 9.5, 10.2, 12.1 g → 9.5 g(+543 ms)에서 Running, `startedAtNanos` = 2.8 g 시각, 소급 샘플 offset 0부터), 확인 구간 중 임계값 아래·급감·끊김 취소, 서버 들어 올림 유량(47 g·20 g/s → −245.9 g에서 유량 0), 정상 추출, 영점 직후 ±0.6 g 흔들림(시작 안 함), 실측 영점 순서(`Tared` → 213.4 g × 3 → 0 g, Running 안 됨. 이어서 1.2 g부터 100 ms 간격으로 넘는 샘플이 500 ms 확인 구간을 채우면 Running, C-0D-2·F-B4-1), 컵 들어 올림(무게가 2 g 넘게 급감하면 창을 비우고 그 샘플의 저울 유량 0.5 g/s만 남음. 천천히 줄면 저울 유량 0.4 g/s가 그대로 평균에 들어감), 300 ms 공백, 3 s 넘는 공백(NoData. 2.5 s 공백은 NoData 아님), 끊김 후 재연결(재연결 뒤 Reading 없이 2.5 s Tick은 Disconnected 유지), 과부하, 저울 버튼 타이머(메아리 없음), 저울 버튼 리셋(요약으로), 레시피 단계·`paceDeltaSec` 부호, 기다리기 단계(건너뜀·기다리는 동안 `paceDeltaSec` 0·L ± 1 g 흔들림에 튀지 않음), 밸브 신호(정확히 도달·지나침·Paused 중·재개 뒤 한 번·한 입력에 두 이벤트), 자동 완료(끝 시각 전 정지는 무시, 하리오 스위치 침지 포함), 타이머 상한(Reading 없이 Tick만으로 도달 포함), 자동 시작 꺼짐, 일시정지 10 s 뒤 계속(gaps 없음, offset 연속), Idle에서 설정 변경 뒤 영점·임계값 판정, phase 전이마다 `PhaseChanged` 출처.
 
 ## 8. `:app` 계약
 
@@ -741,7 +754,19 @@ interface PermissionMonitor {
     val requiredPermissions: Array<String>       // BlePermissions.required(Build.VERSION.SDK_INT) 그대로(6절). 목록을 따로 만들지 않는다
 }
 class AndroidPermissionMonitor(context: Context, scale: ScaleClient) : PermissionMonitor
+
+/** 영구 거부 판정(F-B2-1, 2026-11-03 하네스 추천(잠정)). MainActivity가 부르는 순수 함수, PermissionDenialTest */
+object PermissionDenial {
+    const val INSTANT_RESULT_MS = 500L
+    fun deniedOnceAfterResult(granted: Boolean, rationale: Boolean, deniedOnce: Boolean): Boolean  // 허용 → false, rationale true → true, 그 밖 그대로
+    fun isPermanent(granted: Boolean, rationale: Boolean, deniedOnce: Boolean, elapsedMs: Long): Boolean
+        // !granted && !rationale && (deniedOnce || elapsedMs < INSTANT_RESULT_MS). elapsedMs = 요청 launch → 결과 콜백
+    fun deniedOnceOnResume(allGranted: Boolean, deniedOnce: Boolean): Boolean  // 허용돼 있으면 false(설정에서 허용하고 돌아옴)
+}
 ```
+
+- 영구 거부 판정(F-B2-1): 시스템이 이미 '다시 묻지 않음'인데 앱의 `deniedOnce` 기록이 없으면(다른 경로로 거부·백업 복원·adb) 이전 규칙은 Denied로 남아 "권한 허용"이 대화상자 없이 즉시 거부되는 막다른 화면이 됐다. 그래서 요청에서 결과까지 `INSTANT_RESULT_MS`(500 ms)보다 빨리 거부 + rationale false로 돌아오면 대화상자가 뜨지 않은 것으로 보고 영구 거부로 판정한다. 대화상자를 바깥 눌러 닫은 경우는 사람이 보고 누르는 시간(보통 1 s 이상)이 걸려 Denied로 남는다. 아주 빨리 닫아 영구 거부로 잘못 보면 "설정 열기"가 나오고, 설정에서 허용할 수 있어 막히지 않는다. 대안 "Denied 배너에 '설정 열기' 보조 동작"은 S1·S2·S3 세 화면과 문구·스크린샷을 바꾸고 첫 실행부터 버튼 두 개를 보여 버려 택하지 않았다. 되돌리는 비용 낮음(함수 하나).
+- `deniedOnce`(SharedPreferences "permission")는 화면 복귀(`onResume`) 때 권한이 모두 허용돼 있으면 지운다(B2 관찰: 설정에서 허용한 뒤에도 남아 나중에 다시 끄면 처음부터 "설정 열기"가 나올 수 있었다).
 
 - 가짜(`FakeAppPrefs`, `FakePermissionMonitor`, 8.3의 `FakeBrewRepository`·`FakeRecipeRepository`)는 `:app`의 test 소스(`app/src/test/.../fake/`)에 둔다. 호출 기록과 예외 주입(`failNext…`)을 갖는다. 가짜는 실제 구현과 같은 의미 규칙을 따른다: `FakeBrewRepository.saveDraft`는 8.3 주석대로 `in_progress`인 행만 갱신하고 완료·삭제된 id면 아무것도 바꾸지 않고 같은 id를 돌려준다. ViewModel·컨트롤러 테스트는 이 가짜와 `FakeScaleClient`만 쓰고 Robolectric을 쓰지 않는다. 실제 구현(`SharedPrefsAppPrefs`, `AndroidPermissionMonitor`, Room 저장소)만 Robolectric으로 테스트한다.
 - `AppContainer`는 마일스톤마다 채운다. M7은 `appScope`·`clock`·`scale`·`prefs`·`permission`만 갖는다. M8이 M6 결과(`database`·`recipes`·`brews`)를 연결하고 `brewController`를 더한다. 그 전 마일스톤의 컨테이너에는 해당 `val`이 없다(빈 자리·null 기본값을 두지 않는다).
@@ -1095,7 +1120,7 @@ fun lerpPoints(from: FloatArray, to: FloatArray, p: Float, out: FloatArray)
 `ConnectionState`(5.4), 스캔 결과, `PermissionStatus`, 저장 기기 유무를 합쳐 하나로 만든다. S1 칩·배너, S2, S3가 같은 값을 쓴다.
 
 ```kotlin
-enum class ConnectFailure { ConnectFailed, ServiceNotFound, Timeout }
+enum class ConnectFailure { ConnectFailed, PairingModeMaybe, ServiceNotFound, Timeout }   // PairingModeMaybe: 2026-11-03 FIX-9(A-5)
 
 sealed interface ConnectionUi {
     data object NoDevice : ConnectionUi
@@ -1134,7 +1159,8 @@ fun connectionUi(
 | `Failed(ScanFailed)` | — | `ScanFailed` |
 | `Failed(ServiceNotFound)` | — | `Failed(ServiceNotFound)` |
 | `Failed(ConnectTimeout)` | — | `Failed(Timeout)` |
-| `Failed(GattError)`, `Failed(ReconnectExhausted)` | — | `Failed(ConnectFailed)` |
+| `Failed(GattError)` | `whitelistAdvertising` = true (5.4, A-5) | `Failed(PairingModeMaybe)` (S1 배너·S2·S3 같은 문구, ui-design 5.1) |
+| `Failed(GattError)`, `Failed(ReconnectExhausted)` | 그 밖 | `Failed(ConnectFailed)` |
 | `Connecting`, `Connected`, `Reconnecting` | — | 같은 이름 |
 
 연결 칩(ui-design 4.1)은 `ConnectionUi`에서 고른다. `Scanning`·`ScanEmpty`·`ScanFailed`는 `Disconnected` 칩, `PermissionPermanentlyDenied`·`LocationOff`는 `PermissionMissing` 칩을 쓴다.
@@ -1814,6 +1840,7 @@ internal object VariantHooks {
 | 2026-11-02 | 9.4 | 사용자 결정(M8 리뷰 남은 지적): `ValveOpen`·`ValveClose` 알림을 Polite → Assertive. 시각이 정해진 행동 신호이고 터치 진동이 꺼진 TalkBack 사용자에게 유일한 비시각 신호라서(ui-design 8.3 동시 갱신) |
 | 2026-11-02 | 0, 1, 2.2, 8.1, 8.3, 9.1, 10, 10.1 | P2(하네스 추천(잠정, 사용자 최종 검토 대기)): V60 기본·6888에 기다리기 단계 `("0:40까지 기다리기", 60, 40)`을 1단계 다음에 넣음(V60 3단계, 6888 5단계), 시드만 바꾸고 DB 버전 1·identityHash 그대로, 개발 기기는 `pm clear` 뒤 새 시드, P2 범위 밖 같은 모양(6888 2·3차 뒤, 테츠 카스야 기본) 기록. 10.1 디버그 데모 저울 새 절(사용자 지시): testFixtures 바이트 수준 저울 흉내 + `:core:ble` debug 가짜 transport를 실제 `BleScaleClient`에, 진입 = debug 런처 별칭 `DemoLauncher`, 데모 prefs·DB 분리, release 제외 확인 명령, 계측 테스트 의존성(2.2), 결정 표 D1~D7(하네스 추천(잠정)). 8.1 `TimemoreApp.container` `by lazy`, 9.1 debug 별칭 예외. P1(가로 밸브 칸 한 줄)은 ui-design 4.11만 바뀌고 이 문서 계약은 그대로. 마일스톤 FIX-6·DEMO-1~3 추가, M8·M9·M10 조건 문구, M9·M10·M11 의존에 FIX-6 | `_workspace/run_meta.json` P1·P2·P3, `_workspace/03_report_wf_f65760f7-857.md`, 사용자 지시(2026-11-02) |
 | 2026-11-02 | 9.1 | P7(하네스 추천(잠정, 사용자 최종 검토 대기)): S8 `isBackEnabled` = `hasUnsavedChanges || state == Saving`. 저장 중 뒤로 가기로 화면을 떠나 저장 결과를 잃지 않게 한다(M10 리뷰, wf_1db05a96-4f1). 되돌리는 비용 낮음(조건 한 줄) |
+| 2026-11-03 | 4.1, 4.2, 5.3, 5.4, 7.2, 8.1, 9.2 | 프로브 B(`_workspace/04_device_results.md`) 반영, 결정은 모두 하네스 추천(잠정, 사용자 최종 검토 대기): F-B4-1 자동 시작 확인 구간 500 ms·t₀ 소급·급감 취소(`autoStartConfirmNanos`·`weightDropGrams`), O-B8-1 무게 급감 시 유량 창 비움, C-MC-1 응답 짝짓기 "쓰기 직전 시각 이후 수신"·짝 없는 응답 로그·화면 안내 없음, A-5 첫 연결 133 + 화이트리스트 방송 → `PairingModeMaybe` 안내(`ScanCandidate.broadcastType`, `GattError.whitelistAdvertising`), F-B2-1 즉시 거부(500 ms 미만)도 영구 거부·`onResume`에서 `deniedOnce` 지움. A-1 Android·C-0B-2a 확정으로 `TODO(device)` 제거, 4.1에서 A-1·A-5 행 삭제(4.2로). 마일스톤 FIX-7·FIX-8·FIX-9 | `_workspace/run_meta.json` P14~P18, `04_device_b_B4.log`·`B8.log`·`F5_B1_B10.log` |
 
 ## 13. Android 공식 스킬 점검 (android-skills 1.0.18, 2026-10-29)
 

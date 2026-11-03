@@ -56,14 +56,16 @@ class BrewEngineTest {
             r.feed(reading(ms(100L * (i + 1)), if (i % 2 == 0) 0.6 else -0.6))
             assertEquals(WaitingForPour, r.state.phase)
         }
-        r.feed(reading(ms(3100), 1.2))
+        // 처음 넘은 3.1 s부터 확인 구간 500 ms 동안 계속 넘어야 시작(F-B4-1)
+        for (k in 0..4) r.feed(reading(ms(3100 + 100L * k), 1.2 + 0.2 * k))
         assertEquals(WaitingForPour, r.state.phase)
-        val fx = r.feed(reading(ms(3200), 1.4))
+        val fx = r.feed(reading(ms(3600), 2.2))
         assertEquals(Running, r.state.phase)
         assertEquals(ClearSamples, fx[0])
         assertEquals(SendTimer(TimerAction.Start), fx[1])
         assertEquals(PhaseCause.AutoStart, fx.phaseChange().cause)
-        for (k in 1..20) r.feed(reading(ms(3200 + 100L * k), 1.4 + k))
+        assertEquals(ms(3100), r.state.startedAtNanos)
+        for (k in 1..20) r.feed(reading(ms(3600 + 100L * k), 2.2 + k))
         assertEquals(1, r.count { it == SendTimer(TimerAction.Start) })
     }
 
@@ -76,9 +78,9 @@ class BrewEngineTest {
         // 다시 영점 → 무장 → 임계값 바로 위 2회로 시작. 무장 판독을 빼면 2.1은 무장 전이라 시작하지 않는다
         r.feed(Tared(ms(700)))
         r.feed(reading(ms(800), 0.0))
-        r.feed(reading(ms(900), 2.1))
+        for (k in 0..4) r.feed(reading(ms(900 + 100L * k), 2.1))
         assertEquals(WaitingForPour, r.state.phase)
-        r.feed(reading(ms(1000), 2.1))
+        r.feed(reading(ms(1400), 2.1))   // 확인 구간 500 ms
         assertEquals(Running, r.state.phase)
     }
 
@@ -105,9 +107,9 @@ class BrewEngineTest {
         assertEquals(WaitingForPour, r.state.phase)
         r.feed(Tared(ms(300)))
         r.feed(reading(ms(400), 0.0))
-        r.feed(reading(ms(500), 2.1))
+        for (k in 0..4) r.feed(reading(ms(500 + 100L * k), 2.1))
         assertEquals(WaitingForPour, r.state.phase)
-        r.feed(reading(ms(600), 2.1))
+        r.feed(reading(ms(1000), 2.1))   // 확인 구간 500 ms
         assertEquals(Running, r.state.phase)
     }
 
@@ -236,12 +238,12 @@ class BrewEngineTest {
 
     // ---- 유량 ----
 
-    @Test fun weightDropKeepsScaleFlowInAverage() {
+    @Test fun sharpWeightDropClearsFlowWindowKeepingCurrentScaleFlow() {
         val r = Rig()
         r.start()
         for (k in 1..20) r.feed(reading(ms(100L * k), 10.0 + 0.3 * k, 3.0))
-        r.feed(reading(ms(2100), 16.0 - 200.0, 0.5))   // 컵 들어 올림: 무게 −200 g, 저울 유량 0.5
-        assertEquals((9 * 3.0 + 0.5) / 10, r.state.flowGramsPerSec, 1e-9)
+        r.feed(reading(ms(2100), 16.0 - 200.0, 0.5))   // 컵 들어 올림: 무게 −200 g(2 g 넘게 급감) → 창을 비우고 이 샘플의 저울 유량만(O-B8-1)
+        assertEquals(0.5, r.state.flowGramsPerSec, 1e-9)
 
         for (k in 22..31) r.feed(reading(ms(100L * k), -184.0, 0.0))
         r.feed(reading(ms(3200), -184.0, -1.0))   // 방어 입력: 평균 −0.1 → 0

@@ -108,6 +108,7 @@ class BrewScreenshotTest {
         s.scene("brew_unit_unknown_timed_out", Scenes.idle(reading = ReadingUi.UnitUnknownTimedOut, banner = BrewBanner.UnitUnknownTimedOut, canStart = false))
         s.scene("brew_model_mismatch", Scenes.idle(connection = ConnectionUi.Connected(Fx.device.copy(modelNumber = "TES009")), banner = BrewBanner.ModelMismatch))
         s.scene("brew_failed", Scenes.idle(connection = ConnectionUi.Failed(ConnectFailure.ConnectFailed), weight = null, banner = BrewBanner.Failed))
+        s.scene("brew_failed_pairing_mode", Scenes.idle(connection = ConnectionUi.Failed(ConnectFailure.PairingModeMaybe), weight = null, banner = BrewBanner.Failed))   // F-F5-1
         s.scene("brew_failed_timeout", Scenes.idle(connection = ConnectionUi.Failed(ConnectFailure.Timeout), weight = null, banner = BrewBanner.Failed))
         s.scene("brew_scanning_stopped", Scenes.idle(connection = ConnectionUi.Scanning(emptyList(), stopped = true), weight = null))
         s.scene("brew_scan_empty", Scenes.idle(connection = ConnectionUi.ScanEmpty, weight = null))
@@ -154,6 +155,7 @@ class BrewScreenshotTest {
         s.scene("brew_disconnected_running", Scenes.running(connection = ConnectionUi.Disconnected, banner = BrewBanner.Disconnected, stale = StaleReason.Disconnected, staleAt = 55.0, gaps = gap))
         s.scene("brew_overload", Scenes.running(banner = BrewBanner.Overload, stale = StaleReason.Overload, staleAt = 55.0, overloadFrom = 55.0))
         s.scene("brew_nodata", Scenes.running(banner = BrewBanner.NoData, stale = StaleReason.NoData, staleAt = 56.0, gaps = gap))
+        s.font200("brew_failed_pairing_mode") { SceneView(Scenes.idle(connection = ConnectionUi.Failed(ConnectFailure.PairingModeMaybe), weight = null, banner = BrewBanner.Failed)) }
         s.font200("brew_reconnecting_running", advanceMs = STILL) {
             SceneView(Scenes.running(recipe = null, connection = rec, banner = BrewBanner.Reconnecting, stale = StaleReason.Disconnected, staleAt = 52.0, gaps = gap))
         }

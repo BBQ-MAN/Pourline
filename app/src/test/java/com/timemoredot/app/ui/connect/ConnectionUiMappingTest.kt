@@ -6,6 +6,7 @@ import com.timemoredot.protocol.FailureReason
 import com.timemoredot.protocol.ScaleDevice
 import com.timemoredot.protocol.ScanCandidate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.reflect.KClass
 
@@ -51,6 +52,20 @@ class ConnectionUiMappingTest {
         assertEquals(ConnectionUi.Failed(ConnectFailure.Timeout), map(ConnectionState.Failed(FailureReason.ConnectTimeout)))
     @Test fun `Failed GattError`() =
         assertEquals(ConnectionUi.Failed(ConnectFailure.ConnectFailed), map(ConnectionState.Failed(FailureReason.GattError(133))))
+
+    /** F-F5-1: 첫 연결 133 + 화이트리스트 방송이면 페어링 모드 안내(S1 배너·S2·S3가 같은 값). */
+    @Test fun `Failed GattError whitelist shows pairing mode hint`() {
+        assertEquals(
+            ConnectionUi.Failed(ConnectFailure.PairingModeMaybe),
+            map(ConnectionState.Failed(FailureReason.GattError(133, whitelistAdvertising = true))),
+        )
+        assertTrue(failureText(ConnectFailure.PairingModeMaybe).contains("버튼을 길게 눌러 페어링 모드로"))
+        assertTrue(failureText(ConnectFailure.PairingModeMaybe).contains("처음 연결한다면"))   // 133은 다른 이유일 수 있어 단정하지 않는다
+        assertEquals(
+            "연결 실패, 연결하지 못함, 페어링 모드가 필요할 수 있음",
+            connectAnnouncement(ConnectionUi.Connecting("A", null), ConnectionUi.Failed(ConnectFailure.PairingModeMaybe)),
+        )
+    }
     @Test fun `Failed ReconnectExhausted`() =
         assertEquals(ConnectionUi.Failed(ConnectFailure.ConnectFailed), map(ConnectionState.Failed(FailureReason.ReconnectExhausted)))
     @Test fun Connecting() =

@@ -13,6 +13,7 @@ fun connectAnnouncement(previous: ConnectionUi?, current: ConnectionUi, location
             is ConnectionUi.Connected -> if (previous is ConnectionUi.Reconnecting) "저울 연결됨" else null
             is ConnectionUi.Failed -> "연결 실패, " + when (current.reason) {
                 ConnectFailure.ConnectFailed -> "연결하지 못함"
+                ConnectFailure.PairingModeMaybe -> "연결하지 못함, 페어링 모드가 필요할 수 있음"
                 ConnectFailure.ServiceNotFound -> "저울 서비스 없음"
                 ConnectFailure.Timeout -> "응답 없음"
             }

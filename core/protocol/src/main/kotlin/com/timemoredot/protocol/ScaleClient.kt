@@ -4,7 +4,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /** name: 표시 이름 규칙(A-3a). 광고 이름 → 없으면 저장 주소와 같을 때 last_name → 없으면 null. 대체 문구는 화면이 표시할 때만 만든다. */
-data class ScanCandidate(val address: String, val name: String?, val rssi: Int, val lastSeenNanos: Long)
+/** broadcastType: 광고 manufacturerData[0xFFFF] 값[0](A-1, 01 화이트리스트 / 02 일반·페어링 모드). 없으면 null. 첫 연결 실패 안내에 쓴다(F-F5-1). */
+data class ScanCandidate(val address: String, val name: String?, val rssi: Int, val lastSeenNanos: Long, val broadcastType: Int? = null)
 
 data class ScaleDevice(
     val address: String,
@@ -20,7 +21,9 @@ sealed interface FailureReason {
     data object ScanFailed : FailureReason             // onScanFailed
     data object ServiceNotFound : FailureReason        // SCALE_SERVICE_UUID 또는 FFF1/FFF2 특성 없음
     data object ConnectTimeout : FailureReason         // connectGatt부터 알림 구독까지 10 s 초과
-    data class GattError(val status: Int) : FailureReason   // 첫 연결 실패 (예: 133)
+    /** 첫 연결 실패 (예: 133). whitelistAdvertising: status 133이고 그 저울의 마지막 광고 방송 유형이 01(화이트리스트)이었음.
+     *  처음 보는 휴대폰은 저울을 페어링 모드로 켜야 붙는 것으로 보인다(F-F5-1, 프로브 B Fold5). 133은 다른 이유일 수도 있어 안내는 단정하지 않는다 */
+    data class GattError(val status: Int, val whitelistAdvertising: Boolean = false) : FailureReason
     data object ReconnectExhausted : FailureReason     // 재연결 10회 실패
 }
 
