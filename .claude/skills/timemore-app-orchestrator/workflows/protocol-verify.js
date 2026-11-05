@@ -9,6 +9,7 @@ export const meta = {
   ],
 }
 
+// 모델 라우팅(2026-11-05): agentType 없는 추출·검증·리뷰 호출은 sonnet 으로 고정한다. 지정하지 않으면 세션 모델(opus)을 상속해 주장·지적마다 opus 가 돈다.
 // 세션 중간에 만든 .claude/agents/ 유형은 다음 세션부터 로드된다. 유형을 못 찾으면 정의 파일을 읽는 기본 에이전트로 대신 실행한다.
 const call = (prompt, opts) => agent(prompt, opts).catch(e => {
   if (!opts || !opts.agentType || !/not found/i.test(String((e && e.message) || e))) throw e
@@ -70,7 +71,7 @@ const extracted = await call(
 한 주장에는 사실 하나만 담는다. id는 고유해야 한다. 명세 표의 ID가 있으면 그 뒤에 필드를 붙이고(예: P-07.unit), 벡터는 벡터 id를 쓴다.
 명세 표의 한 행이 주장 여러 개로 나뉘면 반영 단계는 그 주장이 모두 confirmed일 때만 행을 확정으로 둔다.
 sourceRef에는 명세가 적은 근거 위치(원문 절, 로그 파일:줄)를 옮기고 근거가 없으면 "없음"으로 둔다.`,
-  { label: '주장 추출', phase: '주장 추출', schema: CLAIMS })
+  { label: '주장 추출', phase: '주장 추출', schema: CLAIMS, model: 'sonnet' })
 if (!extracted || !extracted.claims.length) return { error: '추출된 주장이 0건이다. 명세가 비었거나 추출에 실패했다.', draft }
 // 반영 대조가 id로 이뤄지므로 id가 겹치면 뒤쪽에 번호를 붙여 고유하게 만든다.
 const seenIds = {}
@@ -96,7 +97,7 @@ const judged = await parallel(claims.map(c => () =>
 원문: ${SOURCE}/ , 명세: ${SPEC}, 벡터: ${VECTORS}
 ${extra}
 ${RULE} 근거가 침묵하거나 해석이 둘 이상이면 uncertain. 확신이 없으면 uncertain을 고른다.`,
-    { label: `검증:${c.id}#${i}`, phase: '주장 검증', schema: VERDICT, effort: 'high' })))
+    { label: `검증:${c.id}#${i}`, phase: '주장 검증', schema: VERDICT, effort: 'high', model: 'sonnet' })))
     .then(vs => {
       const ok = vs.filter(Boolean)
       const status = ok.length === LENSES.length && ok.every(v => v.status === 'confirmed') ? 'confirmed'

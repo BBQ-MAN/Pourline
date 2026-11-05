@@ -9,6 +9,7 @@ export const meta = {
   ],
 }
 
+// 모델 라우팅(2026-11-05): agentType 없는 추출·검증·리뷰 호출은 sonnet 으로 고정한다. 지정하지 않으면 세션 모델(opus)을 상속해 주장·지적마다 opus 가 돈다.
 // 세션 중간에 만든 .claude/agents/ 유형은 다음 세션부터 로드된다. 유형을 못 찾으면 정의 파일을 읽는 기본 에이전트로 대신 실행한다.
 const call = (prompt, opts) => agent(prompt, opts).catch(e => {
   if (!opts || !opts.agentType || !/not found/i.test(String((e && e.message) || e))) throw e
@@ -96,7 +97,7 @@ function reviewersFor(m, changed, shots) {
 async function review(m, changed, shots, round) {
   const reviewers = reviewersFor(m, changed, shots)
   const run = (r, tag) => call(r.prompt,
-    Object.assign({ label: `리뷰:${r.key}:${m.id}#${round}${tag}`, phase: '리뷰', schema: r.schema || FINDINGS }, r.agentType ? { agentType: r.agentType } : {}))
+    Object.assign({ label: `리뷰:${r.key}:${m.id}#${round}${tag}`, phase: '리뷰', schema: r.schema || FINDINGS }, r.agentType ? { agentType: r.agentType } : { model: 'sonnet' }))
     .then(res => res && Object.assign({ key: r.key }, res))
   // QA가 완료 조건을 다 판정하지 않으면 결과가 없는 것과 같다.
   const usable = (r, x) => x && (r.key !== 'qa' || x.acceptance.length >= (m.acceptance || []).length)
@@ -117,7 +118,7 @@ const judge = (m, round, f, i) => call(
   (f.carried ? '\n이전 라운드에서 확정된 지적이다. 현재 코드에서 아직 유효한지 판정한다.' : '') +
   (f.rejection ? `\n구현자 반박: ${f.rejection}\n반박 근거가 맞으면 refuted, 틀리면 confirmed로 판정하고 이유를 적는다.` : '') +
   `\n지적: ${JSON.stringify(f)}\n${SPECS}`,
-  { label: `검증:${m.id}#${round}.${i}`, phase: '지적 검증', schema: VERDICT, effort: 'high' })
+  { label: `검증:${m.id}#${round}.${i}`, phase: '지적 검증', schema: VERDICT, effort: 'high', model: 'sonnet' })
 const withVerdict = (f, v) => Object.assign({}, f, { verdict: v || { status: 'uncertain', reason: NO_VERDICT } })
 
 const report = []

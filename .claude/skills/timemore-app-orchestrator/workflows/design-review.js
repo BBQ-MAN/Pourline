@@ -9,6 +9,7 @@ export const meta = {
   ],
 }
 
+// 모델 라우팅(2026-11-05): agentType 없는 추출·검증·리뷰 호출은 sonnet 으로 고정한다. 지정하지 않으면 세션 모델(opus)을 상속해 주장·지적마다 opus 가 돈다.
 // 세션 중간에 만든 .claude/agents/ 유형은 다음 세션부터 로드된다. 유형을 못 찾으면 정의 파일을 읽는 기본 에이전트로 대신 실행한다.
 const call = (prompt, opts) => agent(prompt, opts).catch(e => {
   if (!opts || !opts.agentType || !/not found/i.test(String((e && e.message) || e))) throw e
@@ -64,7 +65,7 @@ if (!reviewers.length) return { error: `args.only가 알 수 없는 관점만 �
 
 const NO_VERDICT = '검증 결과 없음'
 const runReview = (r, tag) => call(`${r.prompt}\n${DOCS}\n${READ_ONLY}`,
-  Object.assign({ label: `리뷰:${r.key}${tag}`, phase: '설계 리뷰', schema: FINDINGS }, r.agentType ? { agentType: r.agentType } : {}))
+  Object.assign({ label: `리뷰:${r.key}${tag}`, phase: '설계 리뷰', schema: FINDINGS }, r.agentType ? { agentType: r.agentType } : { model: 'sonnet' }))
 const reviewed = await pipeline(
   reviewers,
   r => runReview(r, '').then(res => res || (log(`리뷰어 ${r.key} 결과 없음 — 한 번 재시도`), runReview(r, '#재시도')))
@@ -73,7 +74,7 @@ const reviewed = await pipeline(
     if (res.failed) return { failed: true }
     return parallel(res.findings.map((f, i) => () => call(
       `다음 설계 지적을 반박하려는 자세로 검증하라. 해당 문서 절과 관련 명세를 직접 읽는다. 파일을 수정하지 않는다. 대비 수치는 python3 -I .claude/skills/ui-design-review/scripts/contrast.py 로 직접 계산한다. 지적대로 두면 구현에서 실제 결함(오작동, 접근성 위반, 계약 불일치)이 생기면 confirmed, 근거가 틀렸거나 이미 문서에 반영돼 있으면 refuted, 판단할 수 없으면 uncertain.\n지적: ${JSON.stringify(f)}\n${DOCS}`,
-      { label: `검증:${r.key}.${i}`, phase: '지적 검증', schema: VERDICT, effort: 'high' })))
+      { label: `검증:${r.key}.${i}`, phase: '지적 검증', schema: VERDICT, effort: 'high', model: 'sonnet' })))
       // 검증자가 실패(null 또는 throw)해도 지적은 판단 보류로 남긴다
       .then(vs => res.findings.map((f, i) => Object.assign({}, f, { lens: r.key, verdict: vs[i] || { status: 'uncertain', reason: NO_VERDICT } })))
   })
